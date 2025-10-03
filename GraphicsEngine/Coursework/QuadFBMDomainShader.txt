@@ -1,0 +1,316 @@
+#include "FastNoiseLite.hlsli"
+
+Texture2D destroyedTerrainTexture: register(t0);
+SamplerState domainSampler : register(s0);
+Texture2D displacementTexture: register(t1);
+cbuffer MatrixBuffer : register(b0)
+{
+    matrix worldMatrix;
+    matrix viewMatrix;
+    matrix projectionMatrix;
+    matrix lightViewMatrix[3];
+    matrix lightProjectionMatrix[3];
+};
+
+struct NoiseParams
+{
+    float amplitude;
+    float frequency;
+    //float2 padding;
+};
+cbuffer NoiseParams : register(b1)
+{
+    //Wave 1
+    float amplitude;
+    float frequency;
+    int octaves;
+    float lucanarity;
+    float gain;
+    //float padding;
+
+    //Wave 2;
+    NoiseParams NoiseOne;
+    NoiseParams NoiseTwo;
+    NoiseParams NoiseThree;
+    NoiseParams NoiseFour;
+    NoiseParams NoiseFive;
+
+};
+
+struct ConstantOutputType
+{
+    float edges[4] : SV_TessFactor;
+    float inside[2] : SV_InsideTessFactor;
+};
+
+struct InputType
+{
+    float4 position : POSITION;
+    float2 tex : TEXCOORD0;
+    float3 normal : NORMAL;
+};
+
+
+
+
+struct OutputType
+{
+    float4 position : SV_POSITION;
+    float2 tex : TEXCOORD0;
+    float3 normal : NORMAL;
+    float3 worldPosition : TEXCOORD1;
+    float4 lightViewPos1: TEXCOORD2;
+    float4 lightViewPos2: TEXCOORD3;
+    float4 lightViewPos3 : TEXCOORD4;
+    float3 localPosition : TEXCOORD5;
+    float3 color : COLOR;
+    float3x3 TBN : TBNMat;
+};
+
+
+float getNoise(fnl_state noise, float3 vec, NoiseParams noise_params)
+{
+	return (fnlGetNoise2D(noise, vec.x * noise_params.frequency, vec.z * noise_params.frequency)) * noise_params.amplitude;
+	
+}
+
+float getfBMTerrainHeight(float3 vec,fnl_state noise)
+{
+
+    float height = 0;
+    float currentFrequency = frequency;
+    float currentAmplitude = amplitude;
+
+    // Compute the output from the fBM noise
+    for (int k = 0; k < octaves; k++)
+    {
+        height += (fnlGetNoise2D(noise, vec.x * currentFrequency, vec.z * currentFrequency)) * currentAmplitude;
+        currentFrequency *= lucanarity;
+        currentAmplitude *= gain;
+    }
+
+    //Multipy with other noise layer
+	height *= getNoise(noise, vec, NoiseOne);
+    return height;
+}
+
+
+float getTerrainHeight(float3 vec,fnl_state noise)
+{
+    float height = (fnlGetNoise2D(noise, vec.x * frequency, vec.z * frequency)) * amplitude;
+    return height;
+}
+
+float3 getTerrainLocal(float3 vec,fnl_state noise)
+{
+    return float3(vec.x, getTerrainHeight(vec,noise), vec.z);
+}
+
+//TODO the EPSILON for normal calculation should be dynamically adjusted based on tesselation
+static  float EPSILON=0.1f;
+float3 computeNormal(float3 position, fnl_state noise) {
+    float3 dx = float3(EPSILON, 0, 0);
+    float3 dz = float3(0, 0, EPSILON);
+
+    // Sample the height at three nearby points
+    float hL = getTerrainHeight(position - dx, noise);
+    float hR = getTerrainHeight(position + dx, noise);
+    float hD = getTerrainHeight(position - dz, noise);
+    float hU = getTerrainHeight(position + dz, noise);
+
+    // Compute tangent vectors
+    float3 tangentX = normalize(float3(2 * EPSILON, hR - hL, 0));  // X-direction
+    float3 tangentZ = normalize(float3(0, hU - hD, 2 * EPSILON));  // Z-direction
+
+    // Compute normal using the cross-product
+    return normalize(cross(tangentZ, tangentX));
+}
+
+float3 computeGlobal(float3 localPos,fnl_state noise)
+{
+    //sample from the world-destroyed texture
+    float2 worldUV = (localPos.xz + 250.0f) / 500.0f;
+    float destroyFactor = 1 - destroyedTerrainTexture.SampleLevel(domainSampler, worldUV, 0).r;
+
+    //get the terrain height from the noise
+    float hNoise = getfBMTerrainHeight(localPos, noise) * destroyFactor;
+
+    //modify the global posiiton by the noise height
+    float3 globalPosition = localPos;
+    globalPosition.y = hNoise;
+
+    //compute normal from the noise dx,dz
+    float3 baseNormal = computeNormal(globalPosition,noise);
+
+    //sample from displacement texture and push along direction
+    float tDisp = displacementTexture.SampleLevel(domainSampler, worldUV, 0).r;
+    globalPosition += baseNormal * tDisp;
+    return globalPosition;
+    
+}
+
+
+[domain("quad")]
+OutputType main(ConstantOutputType input, float2 uvwCoord : SV_DomainLocation, const OutputPatch<InputType, 4> patch)
+{
+     OutputType o;
+
+    float3 p01 = lerp(patch[0].position.xyz, patch[1].position.xyz, uvwCoord.y);
+    float3 p23 = lerp(patch[3].position.xyz, patch[2].position.xyz, uvwCoord.y);
+    float3 localPos = lerp(p01, p23, uvwCoord.x);
+    o.localPosition = localPos;
+
+    float2 uvA = lerp(patch[0].tex, patch[1].tex, uvwCoord.y);
+    float2 uvB = lerp(patch[3].tex, patch[2].tex, uvwCoord.y);
+    float2 texUV = lerp(uvA, uvB, uvwCoord.x) * 5;         // your texScaleFactor
+    o.tex = texUV;
+
+    fnl_state noise = fnlCreateState();
+    noise.seed       = 1337;
+    noise.noise_type = FNL_NOISE_PERLIN;
+
+    static const float EPS = 0.1f;
+    float3 dx = float3(EPS,0,0), dz = float3(0,0,EPS);
+    float globalCoord = computeGlobal(localPos, noise);
+    float gL = computeGlobal(localPos - dx, noise);
+    float gR  = computeGlobal(localPos + dx, noise);
+    float gD  = computeGlobal(localPos - dy, noise);
+    float gU = computeGlobal(localPos + dy, noise);
+
+
+
+    // finite‐difference tangents in world‐space
+    float3 T = normalize(float3(2 * EPS, (gR - gL).y, 0));
+    float3 B = normalize(float3(0, (gU - gD).y, 2 * EPS));
+    float3 N = normalize(cross(B, T));
+
+    // Gram–Schmidt orthonormalise
+    T = normalize(T - N * dot(N, T));
+    B = cross(N, T);
+
+    o.TBN = float3x3(T, B, N);
+
+
+    // world‐space position & normal
+    float4 worldPos4 = mul(float4(displacedPos,1), worldMatrix);
+    o.worldPosition = worldPos4.xyz;
+    o.normal        = normalize(mul(N, (float3x3)worldMatrix));
+
+    o.position  = mul(worldPos4, viewMatrix);
+    o.position  = mul(o.position, projectionMatrix);
+
+    float4 lp = mul(worldPos4, lightViewMatrix[0]);
+    o.lightViewPos1  = mul(lp, lightProjectionMatrix[0]);
+    lp               = mul(worldPos4, lightViewMatrix[1]);
+    o.lightViewPos2  = mul(lp, lightProjectionMatrix[1]);
+    lp               = mul(worldPos4, lightViewMatrix[2]);
+    o.lightViewPos3  = mul(lp, lightProjectionMatrix[2]);
+
+
+    return o;
+}
+
+//[domain("quad")]
+//OutputType main(ConstantOutputType input, float2 uvwCoord : SV_DomainLocation, const OutputPatch<InputType, 4> patch)
+//{
+//    float3 vertexPosition, normal;
+//    float2 tex;
+//    OutputType output;
+//
+//    float3 edge1 = patch[1].position.xyz - patch[0].position.xyz; // U direction
+//    float3 edge2 = patch[3].position.xyz - patch[0].position.xyz; // V direction
+//
+//    float2 deltaUV1 = patch[1].tex - patch[0].tex;
+//    float2 deltaUV2 = patch[3].tex - patch[0].tex;
+//
+//
+//    float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+//
+//    float3 tangent = normalize(f * (deltaUV2.y * edge1 - deltaUV1.y * edge2));
+//    float3 bitangent = normalize(f * (-deltaUV2.x * edge1 + deltaUV1.x * edge2));
+//
+//
+//
+//
+//    float3 v1 = lerp(patch[0].position.xyz, patch[1].position.xyz, uvwCoord.y);
+//    float3 v2 = lerp(patch[3].position.xyz, patch[2].position.xyz, uvwCoord.y);
+//    vertexPosition = lerp(v1, v2, uvwCoord.x);
+//
+//    output.localPosition = vertexPosition;
+//
+//    float2 worldCoord;
+//    worldCoord.x = (vertexPosition.x + 250.0f) / 500.0f;
+//    worldCoord.y = (vertexPosition.z + 250.0f) / 500.0f;
+//
+//    float sampled =  1-destroyedTerrainTexture.SampleLevel(domainSampler, worldCoord, 0).x; // sample red channel
+//     //sampled = 1; // sample red channel
+//
+//
+//    // Create and configure noise state
+//    fnl_state noise = fnlCreateState();
+//    noise.seed = 1337;
+//    noise.noise_type = FNL_NOISE_PERLIN;
+//
+//	// Gather noise data for the XY position of the vertex
+//    float height = getfBMTerrainHeight(vertexPosition, noise) * sampled;
+//    //float height = getfBMTerrainHeight(vertexPosition, noise) ;
+//
+//    vertexPosition.y = height;
+//
+//    normal = computeNormal(vertexPosition, noise);
+//
+//    float2 uv1 = lerp(patch[0].tex, patch[1].tex, uvwCoord.y);
+//    float2 uv2 = lerp(patch[3].tex, patch[2].tex, uvwCoord.y);
+//    tex = lerp(uv1, uv2, uvwCoord.x);
+//    float texScaleFactor = 5;
+//    tex *= texScaleFactor;
+//    //tex.x = u; tex.y = v;
+//
+//    output.tex = tex;
+//
+//    output.normal = mul(normal, (float3x3) worldMatrix);
+//    output.normal = normalize(output.normal);
+//
+//    output.worldPosition = mul(vertexPosition, worldMatrix).xyz;
+//
+//    // Calculate the position of the new vertex against the world, view, and projection matrices.
+//    output.position = mul(float4(vertexPosition, 1.0f), worldMatrix);
+//    output.position = mul(output.position, viewMatrix);
+//    output.position = mul(output.position, projectionMatrix);
+//
+//
+//    float4 inputVertexPosition = float4(vertexPosition.xyz, 1);
+//
+//	// Calculate the position of the vertice as viewed by the light source.
+//	output.lightViewPos1 = mul(inputVertexPosition, worldMatrix);
+//	output.lightViewPos1 = mul(output.lightViewPos1, lightViewMatrix[0]);
+//	output.lightViewPos1 = mul(output.lightViewPos1, lightProjectionMatrix[0]);
+//
+//	// Calculate the position of the vertice as viewed by the light source.
+//	output.lightViewPos2 = mul(inputVertexPosition, worldMatrix);
+//	output.lightViewPos2 = mul(output.lightViewPos2, lightViewMatrix[1]);
+//	output.lightViewPos2 = mul(output.lightViewPos2, lightProjectionMatrix[1]);
+//
+//	// Calculate the position of the vertice as viewed by the light source.
+//	output.lightViewPos3 = mul(inputVertexPosition, worldMatrix);
+//	output.lightViewPos3 = mul(output.lightViewPos3, lightViewMatrix[2]);
+//	output.lightViewPos3 = mul(output.lightViewPos3, lightProjectionMatrix[2]);
+//
+//    
+//    float3x3 TBN = float3x3(tangent, bitangent, normal);
+//    output.TBN = TBN;
+//
+//    // Send the input color into the pixel shader.
+//
+//    return output;
+//}
+//float noiseR = NoiseTexture.SampleLevel(Sampler, ((offsetX.xz + dx) + 250.0f) / 500.0f * 0.1f, 0).r;
+//
+//float noiseD = NoiseTexture.SampleLevel(Sampler, ((offsetZ.xz - dz) + 250.0f) / 500.0f * 0.1f, 0).r;
+//float noiseU = NoiseTexture.SampleLevel(Sampler, ((offsetZ.xz + dz) + 250.0f) / 500.0f * 0.1f, 0).r;
+//
+//float noiseL = NoiseTexture.SampleLevel(Sampler, ((offsetX.xz - dx) + 250.0f) / 500.0f * 0.1f, 0).r;
+//float noiseR = NoiseTexture.SampleLevel(Sampler, ((offsetX.xz + dx) + 250.0f) / 500.0f * 0.1f, 0).r;
+//float noiseD = NoiseTexture.SampleLevel(Sampler, ((offsetZ.xz - dz) + 250.0f) / 500.0f * 0.1f, 0).r;
+//float noiseU = NoiseTexture.SampleLevel(Sampler, ((offsetZ.xz + dz) + 250.0f) / 500.0f * 0.1f, 0).r;
+

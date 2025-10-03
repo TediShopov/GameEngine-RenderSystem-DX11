@@ -1,0 +1,410 @@
+
+@startuml a
+allowmixing
+
+class Scene{
+
+--ORGANIZATIONAL MAPS--
+#vector<Light*> lights
+#map<wstring, wstring> textureMap
+#map<string, Material*> materials
+#map<string, SerializableMesh> meshes
+#vector<MeshInstance*> rootMeshInstances
+#vector<MeshInstance*> meshInstances
+#map<DefaultShader*, RenderItemCollection*> renderCollections
+
+
+--INITIALIZATION--
+-initPhysics()
+-initMaterials()
+-initTextures(int screenWidth, int screenHeight)
+-initMeshes()
+-initShaders(HWND hwnd)
+-initRenderCollections()
+-fillRenderCollections()
+-initCameras()
+-initLights()
+-initCascadedShadowMaps()
+-initRasterStates()
+-autoInsertInRenderCollection(MeshInstance)
+-initSceneComposition( screenWidth, screenHeight)
++init( hinstance,  hwnd,  screenWidth,  screenHeight,  in,  VSYNC,  bool FULL_SCREEN) override
+
+--SPECIAL MESH INSTANCES--
+MeshInstance* activeMeshInstance
+MeshInstance* skyboxMesh
+MeshInstance* shipMeshInstance
+
+--RENDERING--
+#renderTerrain()
+#renderTesselatedTerrain(viewMatrix, projectionMatrix)
+#setupPostProcessingPass()
+#renderTexture()
+#renderSkyboxPass()
+#doPostProcessingPass(passShader, outTexture, inTexture)
+#waterDistortionPass(outTexture, inTexture)
+#cascadedShadowMapPass(directionalLight)
+#renderTesselatedWave(viewMatrix, projectionMatrix)
+#renderSceneToTexture(outTexture, viewMatrix, projectionMatrix)
+#renderScene(Matrix view, Matrix projection)
++render() 
+--PHYSICS--
+#btDiscreteDynamicsWorld* discrete_dynamics_world
+#btRigidBody* shipHullRigidBody
+--UTILITY METHODS--
+-changeStateOfCamera()
+-constructHullRigidBody()
++addTexture( wstring name,  wstring fileapth)
+-setupBaseShaderParamters(DefaultShader* baseShader)
+-setupInstanceParameter(DefaultShader* baseShader, MeshInstance* instance)
++applyTerrainDetail()
+
+
+--GUI WINDOWS--
+-XMVECTOR shipCameraRelPosition
+-float shipCameraFixedHeight
+-gui()
+-shipRaySetup()
+-shipCameraSetup()
+-guiTerrainGeneration()
+-guiTestingRay()
+-mainGuiWindow()
+-destructableComponentEffectGuiWindow()
+-fogParameterGuiWindow()
+-waveParametersGuiWindow()
+-postProcessingGuiWindow()
+-meshInstanceTreeGuiWindow()
+-buoyancyParametersGuiWindow()
+-screenSpaceReflectionGuiWindow()
+--DESTRUCTION FUNCITONALITY--
+#DestructableTerrainPeaks destructableTerrainPeaks
+--CASCACDED SHADOW MAPS--
+#CascadedShadowMaps* cascadedShadowMaps
+----
+#Input* input 
+#ID3D11RasterizerState* _debugRasterState
+#ID3D11RasterizerState* _rasterizedStateCullOn = nullptr
+#ID3D11RasterizerState* _rasterizedStateCullOff= nullptr
+#resetResources()
+#setRootInstances()
+#FPCamera* getCamera()
+#TextureManager* getTextureManager()
+
+}
+
+'Holding terrain and tesselated terrain instancne as well as utility funcitons
+class DestructableTerrainPeaks
+{
+--PUBLIC--
++MeshInstance* TerrainInstance 
++MeshInstance* tesselatedTerrainQuadInstance 
++Terrain* terrainPeak 
++BaseMesh* destructablePeak 
++TerrainTesselationShader* terrainTesselationShader 
++SerializableMesh simpleTerrainSM 
++SerializableMesh tessTerrainSM 
+..
++DestructableTerrainPeaks() 
++initialize(device,context, tesselationShader) 
++Terrain* GetSimpleTerrain() 
++initMeshes() 
++regenSimpleTerrain() 
++initMeshInstances() 
++applyTerrainDetail() 
++fireProjectileAt(origin, direction) : map<MeshInstance, btRigidBody>
+--PROTECTED--
+#float terrainDetail 
+#float tessTerrainDetail
+#float terrainSizeXZ 
+#float waterPlaneHeight 
+#float bottomPlaneHeight
+#int terrainPeakTargetDimension 
+#int destructableComponentTargetDimension 
+..
+#destroyDestructableMesh( direction) : map<MeshInstance, btRigidBody>
+#calculateClosestRayIntersection( orig,  dir) 
+#calculateClosestRayIntersectionNoise( orig,  dir) 
+}
+
+class SerializableMesh{
+	
+-int resolutionParam 
+-int size 
+-SerializableMeshType type 
+-string name 
+-string filepath 
+-bool generateTangentMesh 
+--METHODS--
++CreateMesh(device, deviceContent) : BaseMesh*
++GetMesh() const : BaseMesh*
++HasInitializedMesh() : bool
+--STATIC FACTORY METHODS--
++{static} ProceduralMesh(name, meshData, isTangent) : SerializableMesh 
++{static} ProceduralMesh(name, mesh, isTangent) : SerializableMesh
++{static} CustomMesh(name, file) : SerializableMesh 
++{static}  ShapeMesh(name, type, detail, size) : SerializableMesh
++{static}  ByMeshName(SerializableMesh a, SerializableMesh b) : bool
+
+}
+SerializableMesh o-- DestructableTerrainPeaks 
+MeshInstance o-- DestructableTerrainPeaks 
+'The UTILITY STATIC CLASS 
+class ProceduralDestruction
+{
+--PRIVATE--
+- float DOT_EPSILON 
+..
+-aboveOrOnPlane(plane, point) : bool
+-categorizePointsAboveAndBelow( plane,  Mesh,out  pointsAbove, out pBelow) 
+
+--PUBLIC--
++  aboveOrOnPlane(plane,point) : bool
++  splitMesh(plane, mesh) : vector<BaseMesh*>
++  splitMeshClosed( plane,  Mesh) : vector<BaseMesh*>
++buildTriangleFan( meshData, center,  intersections, generalDirection) 
++  projectOnPlane( point, plane) : XMVECTOR
++  xzIncrementalPlaneSplit( point, toSplit) : vector<MeshInstance*>
++  multiPlaneSplit( point, toSplit) : vector<MeshInstance*>
+
+..UTILITY..
+
++changeOrigin(aboveMesh, newOrigin) 
++getVertexAverage(  vertices,   vertexCenter) 
++addTriangle( aboveMesh,  vertex1,  vertex2, vertex3) 
++addTriangleFacing( aboveMesh,   vertex1,  vertex2, vertex3,  desiredDirection) 
++addTriangleTwoSided(aboveMesh,  Mesh, vertex1,  vertex2, vertex3,) 
++  interpolateVertices(vertexA, vertexB, i) : VertexType
++  calculateIntersectionVertex(plane, vertexA, vertexB) : VertexType
++  randomPointOnSphere(sphereRadius) : XMVECTOR
+..
+}
+
+package ShaderClasses{
+'
+'class DefaultShader{
+'--SHADER BUFFERS--
+'#ShaderBuffer<LightBufferType> lightBuffer 
+'#ShaderBuffer<MaterialBufferType> materialBuffer 
+'#ShaderBuffer<FogParametersType> fogParameters 
+'#ShaderBuffer<SSRBuffer> ssrResource 
+'#ShaderBuffer<ShadowMatrixBuffer> shadowMatrixBuffer 
+'#ShaderBuffer<ShadowDebugData> shadowDebugBuffer 
+'#ShadowMatrixBuffer* buff
+'--SHADER SAMPLERS--
+'#ShaderSamplerParam shadowSampler 
+'#ShaderSamplerParam diffuseSampleState 
+'#ShaderSamplerParam skyboxSampler 
+'--SHADER TEXTURE--
+'#ID3D11Texture2D* cubeMapTexture 
+'#ID3D11ShaderResourceView* cubeMapSRV 
+'#ShaderTextureParam skyboxResource 
+'#ShaderTextureParam diffuseTexture 
+'#ShaderTextureParam colorTexture 
+'#ShaderTextureParam depthTexture 
+'#vector<ShaderTextureParam> shadowDepthTexture 
+'
+'--UTILITY--
+'+loadVertexShaderWLayout(filename, polygon_layout) 
+'+loadCubeMap(deivce, cubemapPath) 
+'+isCubeMap(texture) : bool
+'+LightBufferType constructLightBufferData(Light** lights) 
+'+bool debugVisalizeShadowMaps 
+'+SSRParameters ssrParameters 
+'+DefaultShader(device, windowHandle) 
+'+DefaultShader(device, windowHandle, vsFile, psFile) 
+'-initShader(vsFile, psFile) 
+'-initBuffers(device) 
+'-initSamplers(device) 
+'+setShaderParametersForInstance(context,matrix,material, texture) 
+'+setShaderParameters(deviceContext,view,projection,lightData,light,camPos,width,height) 
+'+setShaderParamsNew(deviceContext,camera, projection,shadowMappingLights,light,fogParams,width,height) 
+'+setSSRColorAndDepthTextures(deviceContext,color,depth) 
+'+setFogParameters(deviceContext,fog) 
+'+setShadowMap(deviceContext,texture,index) 
+'}
+'
+'class TextureShader{
+'+ShaderBuffer<MatrixBufferType> matrixBuffer 
+'+ShaderSamplerParam sampleState 
+'+ShaderTextureParam textureParam 
+'+---
+'+TextureShader(device, windowHandle) 
+'+~TextureShader() 
+'+void setMatrices(deviceContext,world,view,projection) 
+'+void setTexture(deviceContext,texture) 
+'+void setResolutionParams(deviceContext, width,height)
+'+virtual void setIntrinsicParams(deviceContext) {} 
+'
+'}
+'package ShaderResourceUtility{
+'    class ShaderParams
+'    class ShaderTextureParam
+'    class ShaderSamplerParam
+'}
+'
+'package ComputeShaders
+'{
+'class   BuoyancyComputeShader {}
+'
+'}
+'package InstanceShader{
+'class   TerrainShader {}
+'class   NormalMapShader {}
+'class   SkyMapShader {}
+'class   TerrainTesselationShader {}
+'class   InsideOutsideShader {}
+'}
+'package PostProcessingShaders
+'{
+'class UnderwaterEffectShader{}
+'class Blur{}
+'class MangnifyPixelShader{}
+'class LuminanceThresholdPass{}
+'class BloomComposite{}
+'
+'}
+'ComputeShaders <|. DefaultShader
+'PostProcessingShaders <|.up. TextureShader
+'TextureShader <|.up. DefaultShader
+'InstanceShader <|.left. DefaultShader
+'DefaultShader .right.> ShaderResourceUtility
+'
+}
+
+class BaseMesh {}
+class TangentMesh 
+{
+-BaseMesh* meshToTransform 
+-VertexType_Tangent* tangentVertices 
+-ID3D11Buffer* tangentVerticesBuffer 
+----
++TangentMesh(device, context, originalMesh)
++sendData(context, topology) override
+-initBuffers(device) 
+-calculateTriangleTangents(vertex1,vertex2,vertex3): pair<float3,float3>
+-calculateTangents(vertices) : vector<float3>
+-fillVertexData(vertices, vertexBuffer : ID3D11Buffer* ) 
+-createStagingVertexBuffer(device, vertices): ID3D11Buffer*
+-createVertexTangentBuffer(device, bufferSource): ID3D11Buffer*
+}
+class ProceduralMesh {
+-bool isTangentMesh = false 
++ProceduralMeshA(device,deviceContext,vertices,indices) :
++ProceduralMeshA(device,deviceContext,meshData) 
+-initBuffers(device) 
+}
+
+TangentMesh <|.. BaseMesh
+ProceduralMesh <|.. BaseMesh
+BaseMesh o.. SerializableMesh
+
+class MeshInstance{
+-SerializableMesh _mesh 
+-Material* _material 
+-Transform transform 
++MeshInstance()
++MeshInstance(serializableMesh)
++getMesh() const : BaseMesh*
++getSerializableMesh() const : SerializableMesh
++getMaterial() const : Material*
++setMesh(serializableMesh) : void
++setMaterial(material) : void
+}
+
+class Transform{
+-static Transform* transform_default_ 
+-mutable bool toBeUpdated 
+-mutable bool silentState 
+-float Roll 
+-float Pitch 
+-float Yaw 
+-XMVECTOR origin 
+-XMVECTOR position 
+-XMVECTOR scale 
+-XMMATRIX originMatrix 
+-XMMATRIX translationMatrix 
+-XMMATRIX rotationMatrix 
+-XMMATRIX scaleMatrix 
+-XMMATRIX inverseMatrix 
+-std::vector<Transform*> children 
+-void update() const 
+-bool composeRotationFromQuaternions = false 
+-XMVECTOR quaternion 
+---
++setQuaternion(float x, float y, float z, float w) 
++setComposeRotationFromQuaternions(bool b) 
++Transform* parent 
++getYaw() const : float
++getPitch() const : float
++getRoll() const : float
++getPosition() const : XMVECTOR
++getScale() const : XMVECTOR
++getOrigin() const : XMVECTOR
++getGlobalPosition() const : XMVECTOR
++getInverseMatrix() : XMMATRIX
++getTransformMatrix() const : XMMATRIX
++getChildrenTransforms() const : vector<Transform*>
++setPosition(XMVECTOR pos) 
++setPosition(float x, float y, float z) 
++Transform() 
++static Transform* get_default_transform() 
++removeChild(Transform* t) 
++addChild(Transform* t) 
++setParent(Transform* t) 
++setYaw(float v) 
++setPitch(float v) 
++setRoll(float v) 
++setSilent(bool b) 
++translate(float x, float y, float z) 
++translate(XMVECTOR tranlsation) 
++setOrigin(XMVECTOR origin) 
++setRotation(float pitch, float yaw, float roll) 
++setScale(float x, float y, float z) 
++extractYawPitchRoll(XMMATRIX matrix) 
++lookAt(XMVECTOR pos) 
++forceUpdate() const : bool
++onNotify(const Transform* entity, TransformChanged event) override 
+}
+
+
+class Material{
++Material()
++Copy() : Material
++bool blend 
++string name 
++string diffuseTexture 
++string normalTexture 
++string displacementTexture 
++float shininess 
++float3 ambient 
++float3 diffuse 
++float3 specular 
++float3 emissive 
++float reflectionFactor 
+}
+
+
+SerializableMesh o-down- MeshInstance
+Transform o-left- MeshInstance
+Material o-right- MeshInstance
+
+'RenderItemCollection "1" o.right. "many" MeshInstance
+
+
+Scene "1" .right.> "*" ShaderClasses
+Input o-- Scene
+FPCamera o-- Scene
+RenderItemCollection o--  Scene 
+'Scene "1" ---> "MANY" RenderItemCollection
+'Scene "1" ---> "MANY" RenderItemCollection
+
+
+DestructableTerrainPeaks o-- Scene
+DestructableTerrainPeaks -right-> ProceduralDestruction
+
+
+
+
+
+
+@enduml

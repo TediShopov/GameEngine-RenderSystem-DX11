@@ -1,0 +1,324 @@
+
+@startuml a
+allowmixing
+class Dummy{
+    -private
+    +public
+    #prot
+}
+
+class Scene{
+
+--ORGANIZATIONAL MAPS--
+#vector<Light*> lights
+#map<wstring, wstring> textureMap
+#map<string, Material*> materials
+#map<string, SerializableMesh> meshes
+#vector<MeshInstance*> rootMeshInstances
+#vector<MeshInstance*> meshInstances
+#map<DefaultShader*, RenderItemCollection*> renderCollections
+
+
+--INITIALIZATION--
+-initPhysics()
+-initMaterials()
+-initTextures(int screenWidth, int screenHeight)
+-initMeshes()
+-initShaders(HWND hwnd)
+-initRenderCollections()
+-fillRenderCollections()
+-initCameras()
+-initLights()
+-initCascadedShadowMaps()
+-initRasterStates()
+-autoInsertInRenderCollection(MeshInstance* instance)
+-initSceneComposition(int screenWidth, int screenHeight)
++init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight, Input* in, bool VSYNC,bool FULL_SCREEN) override
+
+
+--SPECIAL MESH INSTANCES--
+MeshInstance* activeMeshInstance
+MeshInstance* skyboxMesh
+MeshInstance* shipMeshInstance
+
+--INSTANCE SHADERS--
+TerrainShader*      terrainShader
+DefaultShader* defaultShadowShader
+NormalMapShader* normalAndDisplacementShader
+SkyMapShader* skyMapShader
+BuoyancyComputeShader* buoyancyComputeShader
+TerrainTesselationShader* terrainTesselationShader
+InsideOutsideShader* insideOutsideShaderInstance
+
+WaveShader* gerstnerWaveShader
+TesselatedGerstnerWaveShader* tesselateWaveShader
+
+--POST-PROCESS SHADERS--
+TextureShader* textureShader
+UnderwaterEffectShader* underwaterEffectShader
+Blur* horizontalBlur
+Blur* verticalBlur
+MagnifyPixelShader* magnify
+
+LuminanceThresholdPass *thresholdPass
+BloomComposite *bloomCompositePass
+
+--RENDERING--
+#renderTerrain()
+#renderTesselatedTerrain(XMMATRIX view, XMMATRIX projection)
+#setupPostProcessingPass()
+#renderTexture()
+#renderSkyboxPass()
+#doPostProcessingPass(TextureShader* passShader,RenderTexture* out, RenderTexture* in)
+#waterDistortionPass(RenderTexture* out, RenderTexture* in, RenderTexture* renderTexture)
+#cascadedShadowMapPass(Light* directionalLight)
+#renderTesselatedWave(XMMATRIX view, XMMATRIX projection)
+#renderSceneToTexture(RenderTexture* out, XMMATRIX view, XMMATRIX projection)
+#renderScene(XMMATRIX view, XMMATRIX projection)
++render() 
+
+
+
+--PHYSICS--
+#btDiscreteDynamicsWorld* discrete_dynamics_world
+#btRigidBody* shipHullRigidBody
+--DESTRUCTION FUNCITONALITY--
+DestructableTerrainPeaks destructableTerrainPeaks
+--CASCACDED SHADOW MAPS--
+CascadedShadowMaps* cascadedShadowMaps
+
+
+--UTILITY METHODS--
+changeStateOfCamera()
+constructHullRigidBody()
+addTexture( wstring name,  wstring fileapth)
+setupBaseShaderParamters(DefaultShader* baseShader)
+setupInstanceParameter(DefaultShader* baseShader, MeshInstance* instance)
+applyTerrainDetail()
+
+
+--GUI WINDOWS--
+XMVECTOR shipCameraRelPosition
+float shipCameraFixedHeight
+gui()
+shipRaySetup()
+shipCameraSetup()
+guiTerrainGeneration()
+guiTestingRay()
+mainGuiWindow()
+destructableComponentEffectGuiWindow()
+fogParameterGuiWindow()
+waveParametersGuiWindow()
+postProcessingGuiWindow()
+meshInstanceTreeGuiWindow()
+buoyancyParametersGuiWindow()
+screenSpaceReflectionGuiWindow()
+
+Input* input 
+ID3D11RasterizerState* _debugRasterState
+ID3D11RasterizerState* _rasterizedStateCullOn = nullptr
+ID3D11RasterizerState* _rasterizedStateCullOff= nullptr
+resetResources()
+setRootInstances()
+FPCamera* getCamera()
+TextureManager* getTextureManager()
+
+}
+
+'Holding terrain and tesselated terrain instancne as well as utility funcitons
+class DestructableTerrainPeaks
+{
+--PRIVATE--
+
+--PUBLIC--
+
+float terrainDetail = 300 
+float tessTerrainDetail = 150 
+float terrainSizeXZ = 300 
+
+float waterPlaneHeight = 12 
+float bottomPlaneHeight = 6.5 
+int terrainPeakTargetDimension = 100 
+int destructableComponentTargetDimension = 50 
+
+MeshInstance* TerrainInstance 
+MeshInstance* tesselatedTerrainQuadInstance 
+
+Terrain* terrainPeak = nullptr 
+
+BaseMesh* destructablePeak = nullptr 
+
+TerrainTesselationShader* terrainTesselationShader 
+
+SerializableMesh simpleTerrainSM 
+SerializableMesh tessTerrainSM 
+
+ProceduralDestruction proceduralDestruction 
+
+DestructableTerrainPeaks() 
+
+initialize(ID3D11Device* device, ID3D11DeviceContext* deviceContext, TerrainTesselationShader* terrainTesselationShader) 
+
+Terrain* GetSimpleTerrain() 
+
+
+initMeshes() 
+
+regenSimpleTerrain() 
+
+initMeshInstances() 
+
+applyTerrainDetail() 
+
+
+map<MeshInstance*, btRigidBody*> fireProjectileAt(XMVECTOR origin, XMVECTOR direction) 
+
+
+--PROTECTED--
+ID3D11Device* device 
+ID3D11DeviceContext* deviceContext 
+vector<XMVECTOR> rayIntersections 
+bool isIntersecting 
+
+map<MeshInstance*, btRigidBody*> destroyDestructableMesh(XMVECTOR direction) 
+
+calculateClosestRayIntersections(XMVECTOR orig, XMVECTOR dir) 
+}
+
+'The UTILITY STATIC CLASS 
+class ProceduralDestruction
+{
+
+--PRIVATE--
+const float DOT_EPSILON = 0.05 
+
+vector<XMVECTOR> pAbovePlane 
+vector<XMVECTOR> pBelowPlane 
+vector<XMVECTOR> pIntersections 
+
+bool aboveOrOnPlane(XMVECTOR plane, XMVECTOR point) 
+
+categorizePointsAboveAndBelow(XMVECTOR plane, BaseMesh* Mesh, vector<XMVECTOR>& pAbove,  vector<XMVECTOR>& pBelow) 
+
+vector<BaseMesh*> splitMesh(XMVECTOR plane, BaseMesh* Mesh) 
+vector<BaseMesh*> splitMeshClosed(XMVECTOR plane, BaseMesh* Mesh) 
+
+buildTriangleFan(ProceduralMeshData* meshData,VertexType center,  vector<VertexType>& points, XMVECTOR triangleDirection) 
+
+changeOrigin(ProceduralMeshData& aboveMesh, XMVECTOR origin) 
+
+getVertexAverage( vector<VertexType>& vertices,  DirectX::XMVECTOR& vertexCenter) 
+
+addTriangle(ProceduralMeshData* aboveMesh,  VertexType one, VertexType two, VertexType three) 
+addTriangleFacing(ProceduralMeshData* aboveMesh,  VertexType one, VertexType two, VertexType three, XMVECTOR desiredDirection) 
+addTriangleTwoSided(ProceduralMeshData* aboveMesh, BaseMesh* Mesh, VertexType one, VertexType two, VertexType three) 
+VertexType calculateIntersectionVertex(XMVECTOR plane,VertexType one, VertexType two) 
+VertexType interpolateVertices(VertexType one, VertexType two, float a) 
+XMVECTOR projectOnPlane(XMVECTOR point,XMVECTOR plane) 
+XMVECTOR randomPointOnSphere(double radius = 1.0) 
+int indexWrap(int desired, int maxSize) 
+
+categorizePointsAroundIntersection(XMVECTOR plane,
+BaseMesh* Mesh,
+vector<XMVECTOR>& pAbove,
+vector<XMVECTOR>& pBelow,
+vector<XMVECTOR>& pIntersections
+) 
+
+vector<MeshInstance*> xzIncrementalPlaneSplit(XMVECTOR point,BaseMesh* toSplit) 
+
+vector<MeshInstance*> multiPlaneSplit(XMVECTOR point,BaseMesh* toSplit) 
+
+
+}
+
+package ShaderClasses{
+class DefaultShader{}
+package InstanceShader{
+
+class   TerrainShader {}
+class   NormalMapShader {}
+class   SkyMapShader {}
+class   BuoyancyComputeShader {}
+class   TerrainTesselationShader {}
+class   InsideOutsideShader {}
+}
+package PostProcessingShaders
+{
+class TextureShader{}
+class UnderwaterEffectShader{}
+class Blur{}
+class MangnifyPixelShader{}
+class LuminanceThresholdPass{}
+class BloomComposite{}
+
+}
+PostProcessingShaders <|.. DefaultShader
+InstanceShader <|.. DefaultShader
+
+}
+
+
+Scene ..> ShaderClasses
+
+
+'TerrainShader <|.. DefaultShader 
+'NormalMapShader <|.. DefaultShader 
+'SkyMapShader <|.. DefaultShader 
+'BuoyancyComputeShader <|.. DefaultShader 
+'TerrainTesselationShader <|.. DefaultShader 
+'InsideOutsideShader <|.. DefaultShader 
+'
+'Scene ..> TerrainShader 
+'Scene ..> NormalMapShader 
+'Scene ..> SkyMapShader 
+'Scene ..> BuoyancyComputeShader 
+'Scene ..> TerrainTesselationShader 
+'Scene ..> InsideOutsideShader 
+'
+'
+DestructableTerrainPeaks o-- Scene
+DestructableTerrainPeaks --> ProceduralDestruction
+
+
+
+'setupFullSreenPostProcessing(TextureShader* textureShader, RenderTexture* renderTexture)
+'renderOnFullScreenOrtho(TextureShader* textureShader, RenderTexture* renderTexture)
+'LimitedTimeRenderCollection* DestructableComponentsCollections
+' autoInsertInRenderCollection(MeshInstance* instance)
+' initShaders(HWND hwnd)
+' initSceneComposition(int screenWidth, int screenHeight)
+
+'	float appTime = 0  // Application Time Since Startup
+'	clock_t time_start  // Application ticks for previous frame()
+'	clock_t deltaClockT  // tick difference from previous frame()
+'	float deltaTime  //float point difference from previous frame()
+'	//TODO Could be potentially extracted to each of the post-processing effects
+'	bool enableBlur 
+'	bool enableBloom 
+'	bool enableMagnify 
+'	bool enableWaterDistortion 
+'
+'	//--- FLAGS FOR DIFFERENT RENDERING STAGES OR PASSES ---
+'	bool isPhysicsPaused 
+'	bool isRenderTerrainPeak = false 
+'	bool isRenderDestructablePeak = false 
+'	bool isRenderSceneToTexture = true 
+'	bool underwaterEffectEnabled = false 
+'
+'	bool isRenderingWaves = true 
+'	bool isRenderingSimpleTerrain = true 
+'	bool isRenderingTessellatedTerrain = true 
+'	bool isDebugMode 
+'	bool isCameraAttachedToShip 
+'	  debugRenderBuoyancyForces(XMMATRIX view, XMMATRIX projection) 
+'	Camera* minimapCamera 
+'	OrthoMesh* orthoMesh 
+'	OrthoMesh* fullScreenOrthoMesh 
+'	RenderTexture* minimapTexture 
+'	ID3D11ShaderResourceView* minimapTextureResource 
+'	ID3D11ShaderResourceView* sceneTextureResource 
+
+
+
+@enduml

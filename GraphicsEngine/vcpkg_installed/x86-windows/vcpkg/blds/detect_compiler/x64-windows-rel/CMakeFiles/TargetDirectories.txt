@@ -1,0 +1,2 @@
+D:/ProceduralMethods/cmp301_coursework-TediShopov/Coursework/vcpkg_installed/x86-windows/vcpkg/blds/detect_compiler/x64-windows-rel/CMakeFiles/edit_cache.dir
+D:/ProceduralMethods/cmp301_coursework-TediShopov/Coursework/vcpkg_installed/x86-windows/vcpkg/blds/detect_compiler/x64-windows-rel/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,9 @@
+Package: bullet3
+Version: 3.25
+Port-Version: 1
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: d263a1bdb9cb4b4f682ce3f80f15a719cb00308a61908cb9c7322a71913d0f2c
+Description: Bullet Physics is a professional collision detection, rigid body, and soft body dynamics library
+Status: install ok installed

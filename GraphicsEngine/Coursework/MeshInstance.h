@@ -11,12 +11,12 @@ private:
 	Material* _material;
 
 public:
-	//Transform _transform;
-	MeshInstance()
+	std::string name;
+	MeshInstance() : name()
 	{
 		
 	}
-	MeshInstance(SerializableMesh m):_mesh(m)
+	MeshInstance(SerializableMesh m):_mesh(m), name()
 	{
 
 	}
@@ -27,6 +27,8 @@ public:
 
 	bool operator==(const MeshInstance& other) const
 	{
+
+		bool equalNames = this->name == other.name;
 		bool equalTransforms = this->transform == other.transform;
 		bool equalMaterials = true;
 
@@ -37,7 +39,7 @@ public:
 			equalMaterials = this->_material == nullptr && other._material == nullptr;
 
 		bool equalMeshes = this->_mesh == other._mesh;
-		return equalTransforms && equalMaterials && equalMeshes;
+		return equalNames && equalTransforms && equalMaterials && equalMeshes;
 	}
 
 

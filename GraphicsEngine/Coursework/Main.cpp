@@ -13,6 +13,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 	// Create the system object.
 	system = new System(scene, 1200, 675, true, false);
 
+
+	
+
+
 	// Initialize and run the system object.
 	system->run();
 

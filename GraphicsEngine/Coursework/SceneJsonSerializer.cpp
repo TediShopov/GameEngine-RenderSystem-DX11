@@ -243,7 +243,10 @@ void SceneJsonSerializer::jsonToMeshInstance(json::jobject obj, Scene * scene, M
 {
 	MeshInstance* meshInstance = new MeshInstance();
 
+	meshInstance->name = obj["Name"].as_string();
+
 	//Transform
+
 	this->jsonToTransform(get_entry(obj, "Transform"), meshInstance->transform);
 
 	//Material
@@ -428,6 +431,7 @@ json::jobject SceneJsonSerializer::meshInstanceJson(const MeshInstance* rootInst
 {
 	
 	json::jobject instanceJson;
+	instanceJson["Name"] = rootInstance->name;
 	instanceJson["Transform"] = transformJson(rootInstance->transform);
 	std::string materialName;
 	 Material* foundMaterial = nullptr;

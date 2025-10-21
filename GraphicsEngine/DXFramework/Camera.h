@@ -32,6 +32,15 @@ public:
 	Camera();	///< Initialised default camera object
 	~Camera();
 
+	bool operator== (const Camera& other) const
+	{
+		return
+			XMVector3NearEqual(XMLoadFloat3(&position), XMLoadFloat3(&other.position), XMVectorReplicate(1e-5)) &&
+			XMVector3NearEqual(XMLoadFloat3(&rotation), XMLoadFloat3(&other.rotation), XMVectorReplicate(1e-5)) &&
+			speed == other.speed && lookSpeed == other.lookSpeed;
+
+	}
+
 	void setPosition(float lx, float ly, float lz);		///< Set camera position directly
 	void setRotation(float lx, float ly, float lz);		///< Set camera rotation directly
 

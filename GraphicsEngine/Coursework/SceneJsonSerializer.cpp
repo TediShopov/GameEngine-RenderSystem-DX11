@@ -610,6 +610,8 @@ bool SceneJsonSerializer::ensureSame(std::string filepath, Scene* scene)
 	for (auto& mi : scene->rootMeshInstances)
 		iTransformHieararchy.addChild(mi->transform.cloneHierarchy());
 
+	auto iCamera = *scene->getCamera();
+
 
 	this->serializeScene(filepath, *scene);
 	this->deserializeScene(filepath,scene);
@@ -620,6 +622,8 @@ bool SceneJsonSerializer::ensureSame(std::string filepath, Scene* scene)
 	auto fMeshes = scene->GetAssetSystem()->getMeshes();
 	auto fMaterials = scene->GetAssetSystem()->getMaterials();
 	auto fTextures = scene->GetAssetSystem()->getTextureMap();
+
+
 	std::vector<MeshInstance> fMeshInstances;
 	for (auto& mi : scene->meshInstances)
 		fMeshInstances.push_back(*(mi.get()));
@@ -628,6 +632,8 @@ bool SceneJsonSerializer::ensureSame(std::string filepath, Scene* scene)
 	Transform fTransformHieararchy;
 	for (auto& mi : scene->rootMeshInstances)
 		fTransformHieararchy.addChild(mi->transform.cloneHierarchy());
+
+	auto fCamera = *scene->getCamera();
 
 	
 	for (auto& pair : iMeshes)
@@ -654,6 +660,9 @@ bool SceneJsonSerializer::ensureSame(std::string filepath, Scene* scene)
 		return false;
 
 	if ((iTransformHieararchy.compareHierarchy(fTransformHieararchy)) == false)
+		return false;
+
+	if ((iCamera == fCamera) == false)
 		return false;
 
 	return true;

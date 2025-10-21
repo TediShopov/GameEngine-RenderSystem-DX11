@@ -154,7 +154,7 @@ void Transform::update() const
 
 }
 
-void Transform::copyInternals(const Transform& other)
+ void Transform::copyInternals(const Transform& other)
 {
 	Roll = other.Roll;
 	Pitch = other.Pitch;

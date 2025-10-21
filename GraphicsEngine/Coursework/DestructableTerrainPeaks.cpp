@@ -20,8 +20,7 @@
 
 }
 
- void DestructibleTerrainPeaks::initMeshes()
-{
+ void DestructibleTerrainPeaks::initMeshes() {
 	// -- CHANGE SIMPLE MESH --
 	simpleTerrainSM = SerializableMesh::ShapeMesh("Terrain", ProceduralTerrain, simpleTerrainDetail, terrainSizeXZUnits);
 	simpleTerrainSM.CreateMesh(device, deviceContext);

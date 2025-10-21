@@ -54,6 +54,7 @@ public:
 	RenderSystem(D3D* renderer, HWND hwnd, FPCamera* camera, AssetSystem* assetSystem, int height, int width);
 	~RenderSystem();
 
+
 	bool render();
 
 	void gui();

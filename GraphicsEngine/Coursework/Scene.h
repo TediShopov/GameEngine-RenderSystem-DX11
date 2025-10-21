@@ -40,6 +40,7 @@ struct Ray3D
 class Scene : public BaseApplication
 {
 public:
+	std::unique_ptr<SceneJsonSerializer> _serializer;
 
 	Scene();
 	~Scene();
@@ -50,8 +51,8 @@ public:
 	bool frame() override;
 	bool render() override;
 
-	ID3D11Device* getDevice();
-	ID3D11DeviceContext* getDeviceContext();
+	ID3D11Device* getDevice() const;
+	ID3D11DeviceContext* getDeviceContext() const;
 	FPCamera* getCamera();
 
 	void resetResources();
@@ -60,6 +61,28 @@ public:
 	std::vector<MeshInstance*> rootMeshInstances;
 	std::vector<std::unique_ptr<MeshInstance>> meshInstances;
 	MeshInstance* activeMeshInstance;  //The instances selected by the user from the UI.
+
+	RenderSystem* GetRenderSystem() {
+		return this->renderSystem.get();
+	}
+
+	AssetSystem* GetAssetSystem()
+	{
+		return this->assetSystem.get();
+	}
+
+	const RenderSystem* GetRenderSystem() const {
+		return this->renderSystem.get();
+	}
+	const AssetSystem* GetAssetSystem() const {
+		return this->assetSystem.get();
+	}
+
+	void setRootInstances();
+
+	//--- RENDER QUEUING ---
+	void fillRenderCollections();
+	
 
 protected:
 
@@ -79,8 +102,6 @@ protected:
 	void initCameras();
 	void initLights();
 
-	//--- RENDER QUEUING ---
-	void fillRenderCollections();
 
 	//--- PHYSICS ---
 	void tickPhysicsSimulation();
@@ -161,7 +182,8 @@ private:
 
 	//--- SPECIAL INSTANCES ---
 	std::unique_ptr<MeshInstance> tessellationQuadInstance;  //The buoyant mesh in the scene
-	std::unique_ptr<MeshInstance> shipMeshInstance;
+	//std::unique_ptr<MeshInstance> shipMeshInstance;
+	MeshInstance* shipMeshInstance;
 	std::unique_ptr<MeshInstance> debugSphere;
 
 	//--- UI STATE ---
@@ -176,7 +198,6 @@ private:
 	void calculateAllRayIntersections();
 	void debugRenderBuoyancyForces(XMMATRIX view, XMMATRIX projection);
 	void renderDebugSphereAt(XMMATRIX view, XMMATRIX projection, std::vector<XMVECTOR>& positions, Material* debugMaterial = nullptr);
-	void setRootInstances();
 };
 
 #endif

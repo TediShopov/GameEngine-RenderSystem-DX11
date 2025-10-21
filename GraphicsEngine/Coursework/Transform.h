@@ -44,17 +44,32 @@ private:
 	bool composeRotationFromQuaternions = false;
 	XMVECTOR quaternion;
 
+	void copyInternals(const Transform& other);
+
 public:
+
+	
+
+	Transform(const Transform& other);
+
+	Transform& operator=(const Transform& other);
+
+	Transform* Transform::cloneHierarchy() const;
+
+	bool compareHierarchy(const Transform& other) const;
+
+	bool operator==(const Transform& other) const;
 	void setQuaternion(float x, float y, float z, float w);
 
 	void setComposeRotationFromQuaternions(bool b);
-
+	bool getComposeRotationFromQuaternions() const; 
 	Transform* parent;
 
 
 	float getYaw() const;
 	float getPitch() const;
 	float getRoll() const;
+	XMVECTOR getQuaternion() const;
 
 	XMVECTOR getPosition() const;
 	XMVECTOR getScale() const;

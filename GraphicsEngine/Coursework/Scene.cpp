@@ -6,6 +6,7 @@
 #include "SkyMapShader.h"
 #include "TerrainTesselationShader.h"
 #include "ProceduralMeshA.h"
+#include "SceneJsonSerializer.h"
 #include <sstream>
 
 
@@ -33,7 +34,7 @@ Scene::Scene()
 
 void Scene::constructHullRigidBody()
 {
-	buoyancyComputeShader->setBuoyantBody(shipMeshInstance.get());
+	buoyancyComputeShader->setBuoyantBody(shipMeshInstance);
 	shipHullRigidBody = buoyancyComputeShader->constructBuoyantBodyHull();
 	if (shipHullRigidBody != nullptr)
 		discreteDynamicsWorld->addRigidBody(shipHullRigidBody);
@@ -111,8 +112,9 @@ void Scene::initSceneComposition(int screenWidth, int screenHeight)
 	);
 	shipMeshInstance->transform.setParent(&shipHull->transform);
 	renderSystem->autoInsertInRenderCollection(shipMeshInstance.get());
-	this->shipMeshInstance = std::move(shipHull);
+	this->shipMeshInstance = shipHull.get();
 
+	meshInstances.push_back((std::move(shipHull)));
 	meshInstances.push_back((std::move(shipMeshInstance)));
 
 
@@ -167,7 +169,7 @@ void Scene::init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeig
 	// Call super/parent init function (required!)
 	BaseApplication::init(hinstance, hwnd, screenWidth, screenHeight, in, VSYNC, FULL_SCREEN);
 
-
+	_serializer = std::make_unique<SceneJsonSerializer>();
 
 	assetSystem = std::make_unique<AssetSystem>(*getDevice(), *getDeviceContext());
 	assetSystem->loadAssets();
@@ -279,7 +281,7 @@ void Scene::tickPhysicsSimulation()
 		XMMatrixTranspose(shipMeshInstance->transform.getTransformMatrix());
 
 	//shipHullRigidBody.
-	buoyancyComputeShader->computeAndApplyBuoyantForce(shipHullRigidBody, shipMeshInstance.get(), renderer->getDeviceContext(),
+	buoyancyComputeShader->computeAndApplyBuoyantForce(shipHullRigidBody, shipMeshInstance, renderer->getDeviceContext(),
 		256, 1, 1, wave_buffer);
 
 	if (discreteDynamicsWorld != nullptr)
@@ -389,12 +391,12 @@ void Scene::applyShipForces()
 	steerShip();
 }
 
-ID3D11Device* Scene::getDevice()
+ID3D11Device* Scene::getDevice() const
 {
 	return renderer->getDevice();
 }
 
-ID3D11DeviceContext* Scene::getDeviceContext()
+ID3D11DeviceContext* Scene::getDeviceContext() const
 {
 	return renderer->getDeviceContext();
 }
@@ -445,6 +447,7 @@ void Scene::resetResources()
 	this->rootMeshInstances.clear();
 	this->meshInstances.clear();
 	this->activeMeshInstance = nullptr;
+	this->assetSystem->reset();
 }
 
 bool Scene::render()
@@ -478,7 +481,7 @@ bool Scene::render()
 	return true;
 }
 
-inline void Scene::fillRenderCollections()
+ void Scene::fillRenderCollections()
 {
 	for (size_t i = 0; i < meshInstances.size(); i++)
 	{
@@ -697,6 +700,26 @@ void Scene::gui()
 	renderer->getDeviceContext()->GSSetShader(NULL, NULL, 0);
 	renderer->getDeviceContext()->HSSetShader(NULL, NULL, 0);
 	renderer->getDeviceContext()->DSSetShader(NULL, NULL, 0);
+
+
+	ImGui::Begin("Scene Serialization");
+	bool tempSave = false; 
+	bool tempLoad = false; 
+	bool tempEnsure = false; 
+	std::string defaultSceneFilename = "SceneA.json";
+	if (ImGui::Checkbox("Save",&tempSave))
+	{
+		_serializer.get()->serializeScene(defaultSceneFilename,*this);
+	}
+	if (ImGui::Checkbox("Load",&tempLoad))
+	{
+		_serializer.get()->deserializeScene(defaultSceneFilename,this);
+	}
+	if (ImGui::Checkbox("Ensure",&tempEnsure))
+	{
+		_serializer.get()->ensureSame(defaultSceneFilename,this);
+	}
+	ImGui::End();
 
 	ImGui::Begin("Debug Mode");
 	ImGui::Checkbox("Is Debug Mode", &this->isDebugMode);

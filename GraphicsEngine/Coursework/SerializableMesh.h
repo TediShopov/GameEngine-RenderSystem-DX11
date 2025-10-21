@@ -22,6 +22,36 @@ public:
 	std::string filepath;
 	bool generateTangentMesh=false;
 
+
+	bool operator== (const SerializableMesh& other) const
+	{
+		if (this->_mesh == nullptr && other._mesh == nullptr)
+		{
+			return this->_resolutionParam == other._resolutionParam &&
+			this->_size == other._size &&
+			this->_type == other._type &&
+			this->name == other.name &&
+			this->filepath == other.filepath &&
+			this->generateTangentMesh == other.generateTangentMesh;
+		
+
+		}
+		else if (this->_mesh != nullptr && other._mesh != nullptr)
+		{
+			return this->_resolutionParam == other._resolutionParam &&
+			this->_size == other._size &&
+			this->_type == other._type &&
+			this->name == other.name &&
+			this->filepath == other.filepath &&
+			this->generateTangentMesh == other.generateTangentMesh;
+			this->_mesh->indices == other._mesh->indices;
+
+		}
+		return false;
+
+
+	}
+
 	static SerializableMesh ProceduralMesh(std::string name,ProceduralMeshData data, bool isTangent,
 ID3D11Device* device, ID3D11DeviceContext* deviceContext
 	)

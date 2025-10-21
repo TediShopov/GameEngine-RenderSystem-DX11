@@ -258,12 +258,12 @@ void AssetSystem::initTextures()
 	return textureManager->getTexture(textureName);
 }
 
- Material* AssetSystem::getMaterial(std::string materialName)
+ Material* AssetSystem::getMaterial(std::string materialName) const 
 {
 	return materials.at(materialName);
 }
 
- SerializableMesh AssetSystem::getMesh(std::string meshName)
+ SerializableMesh AssetSystem::getMesh(std::string meshName) const
 {
 	 auto foundMesh = meshes.find(meshName);
 	 ASSERT_WITH_MSG(foundMesh != meshes.end(), "Mesh Not Found: " + meshName);

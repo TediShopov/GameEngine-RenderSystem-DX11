@@ -5,6 +5,7 @@
 
 
 
+
 class Material
 {
 private:
@@ -16,7 +17,7 @@ private:
 	
 
 public:
-	Material()
+	Material():blend(false), shininess(0), reflectionFactor(0)
 	{
 		
 	}
@@ -39,6 +40,27 @@ public:
 		copyOf->displacementTexture = displacementTexture;
 
 		return copyOf;
+	}
+
+	 bool XMFloat3NearEqual(const XMFLOAT3& a, const XMFLOAT3& b, float epsilon = 1e-5f)
+{
+		 return (std::fabs(a.x - b.x) < epsilon) &&
+			 (std::fabs(a.y - b.y) < epsilon) &&
+			 (std::fabs(a.z - b.z) < epsilon);
+}
+
+	bool operator== (const Material& other)
+	{
+		return
+			blend == other.blend &&
+			shininess == other.shininess &&
+			reflectionFactor == other.reflectionFactor &&
+			diffuseTexture == other.diffuseTexture &&
+			normalTexture == other.normalTexture &&
+			displacementTexture == other.displacementTexture &&
+			XMFloat3NearEqual(ambient, other.ambient) &&
+			XMFloat3NearEqual(diffuse, other.diffuse) &&
+			XMFloat3NearEqual(specular, other.specular);
 	}
 
 	bool blend;

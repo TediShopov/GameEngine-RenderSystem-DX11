@@ -11,7 +11,7 @@ private:
 	Material* _material;
 
 public:
-	Transform _transform;
+	//Transform _transform;
 	MeshInstance()
 	{
 		
@@ -24,6 +24,24 @@ public:
 	{
 		
 	}
+
+	bool operator==(const MeshInstance& other) const
+	{
+		bool equalTransforms = this->transform == other.transform;
+		bool equalMaterials = true;
+
+		//Either material contents are matching or the material poitners are bot null
+		if (this->_material != nullptr && other._material != nullptr)
+			equalMaterials = (*this->_material) == (*other._material);
+		else
+			equalMaterials = this->_material == nullptr && other._material == nullptr;
+
+		bool equalMeshes = this->_mesh == other._mesh;
+		return equalTransforms && equalMaterials && equalMeshes;
+	}
+
+
+
 	Transform transform;
 
 	BaseMesh* getMesh() const { return _mesh.GetMesh(); }

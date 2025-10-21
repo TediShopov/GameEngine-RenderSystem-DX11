@@ -28,7 +28,6 @@
 using namespace std;
  class AssetSystem
 {
-	//	public:
 	//  void loadDefaults(ID3D11Device*, ID3D11DeviceContext*);
 	//  const SerializableMesh& mesh(std::string_view) const;
 	//  Material* material(std::string_view);
@@ -40,13 +39,84 @@ using namespace std;
 	//  NormalMapShader& normalDisplace();
 	//  WaveShader& wave();
 	//  TerrainTesselationShader& terrainTess();
+public:
+	AssetSystem(ID3D11Device& device, ID3D11DeviceContext& context)
+		:device(device), deviceContext(context)
+	{
+		textureManager = std::make_unique<TextureManager>(&device, &context);
+	}
+		
+	~AssetSystem()
+	{
+		for (auto mesh : meshes)
+		{
+			delete mesh.second.GetMesh();
+		}
+
+		for (auto material : materials)
+		{
+			delete material.second;
+		}
+		this->materials.clear();
+
+		this->meshes.clear();
+		this->textureMap.clear();
+	}
+
+	void reset()
+	{
+		this->meshes.clear();
+		this->materials.clear();
+		this->textureManager->textureMap.clear();
+		this->textureManager->textureResourceMap.clear();
+		this->textureMap.clear();
+		this->textureMap.insert({ L"default", L"default" });
+	}
+
+	void loadAssets()
+	{
+		initMaterials();
+		initMeshes();
+		initTextures();
+	}
+
+
+	void addTexture(std::wstring name, std::wstring fileapth);
+	void addMesh(std::string name, SerializableMesh mesh) {
+		meshes.insert({ name, mesh });
+
+	}
+	void addMaterial(std::string name, Material* material) {
+		materials.insert({ name, material });
+
+	}
+
+	ID3D11ShaderResourceView* getTexture(std::wstring textureName);
+
+	Material* getMaterial(std::string materialName) const;
+
+	SerializableMesh getMesh(std::string meshName) const;
+
+	
+
+	 const std::map<std::wstring, std::wstring>& getTextureMap() const {
+		 return textureMap;
+	 }
+	 const std::map<std::string, Material*>& getMaterials() const {
+		 return materials;
+	 }
+
+	 const std::map<std::string, SerializableMesh>& getMeshes() const {
+		 return meshes;
+	 }
+
+	//Textuer Manager
+	std::unique_ptr<TextureManager> textureManager;
 
 
 protected:
 	ID3D11Device& device;
 	ID3D11DeviceContext& deviceContext;
-	//Textuer Manager
-	std::unique_ptr<TextureManager> textureManager;
 	//Texuter paths in use
 	std::map<std::wstring, std::wstring> textureMap;
 
@@ -75,39 +145,5 @@ protected:
 	//void initCascadedShadowMaps();
 
 public:
-	AssetSystem(ID3D11Device& device, ID3D11DeviceContext& context)
-		:device(device), deviceContext(context)
-	{
-		textureManager = std::make_unique<TextureManager>(&device, &context);
-	}
-		
-	~AssetSystem()
-	{
-		for (auto mesh : meshes)
-		{
-			delete mesh.second.GetMesh();
-		}
-
-		for (auto material : materials)
-		{
-			delete material.second;
-		}
-		this->materials.clear();
-
-		this->meshes.clear();
-		this->textureMap.clear();
-	}
-	void loadAssets()
-	{
-		initMaterials();
-		initMeshes();
-		initTextures();
-	}
-
-
-	void addTexture(std::wstring name, std::wstring fileapth);
-	ID3D11ShaderResourceView* getTexture(std::wstring textureName);
-	Material* getMaterial(std::string materialName);
-	SerializableMesh getMesh(std::string meshName);
 };
 

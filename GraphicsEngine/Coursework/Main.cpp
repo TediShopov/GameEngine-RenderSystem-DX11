@@ -1,6 +1,7 @@
 // Main.cpp
 #include "../DXFramework/System.h"
 #include "Scene.h"
+#include "SceneJsonSerializer.h"
 #include "TestingScene.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline, int iCmdshow)

@@ -3,6 +3,9 @@ Transform* Transform::transform_default_ = nullptr;
 float Transform::getYaw() const { return this->Yaw; }
 float Transform::getPitch() const { return this->Pitch; }
 float Transform::getRoll() const { return this->Roll; }
+XMVECTOR Transform::getQuaternion() const {
+	return quaternion;
+}
 XMVECTOR Transform::getPosition() const
 {
 	return position;
@@ -151,7 +154,138 @@ void Transform::update() const
 
 }
 
-void Transform::setQuaternion(float x, float y, float z, float w)
+void Transform::copyInternals(const Transform& other)
+{
+	Roll = other.Roll;
+	Pitch = other.Pitch;
+	Yaw = other.Yaw;
+
+	position = other.position;
+	scale = other.scale;
+	origin = other.origin;
+	quaternion = other.quaternion;
+	composeRotationFromQuaternions = other.composeRotationFromQuaternions;
+	silentState = other.silentState;
+	toBeUpdated = true;
+}
+
+ Transform::Transform(const Transform& other) { (*this) = other; }
+
+ Transform& Transform::operator=(const Transform& other)
+{
+	copyInternals(other);
+	parent = nullptr;           // no parent
+	children.clear();                 // empty hierarchy
+
+	// Don’t copy matrices — they’ll be rebuilt lazily
+	return *this;
+}
+
+ Transform* Transform::cloneHierarchy() const
+{
+	Transform* clone = new Transform();
+
+	clone->copyInternals(*this);
+
+	//Recursively copy all children
+	for (Transform* child : children)
+	{
+		Transform* childClone = child->cloneHierarchy();
+		childClone->parent = clone; // link back to new parent
+		clone->children.push_back(childClone);
+	}
+
+	return clone;
+}
+
+ bool Transform::compareHierarchy(const Transform& other) const
+{
+	if (this->composeRotationFromQuaternions == other.composeRotationFromQuaternions)
+	{
+		bool base = false;
+		if (this->composeRotationFromQuaternions)
+		{
+			base =
+				XMVector3NearEqual(position, other.position, XMVectorReplicate(1e-5)) &&
+				XMVector3NearEqual(scale, other.scale, XMVectorReplicate(1e-5)) &&
+				XMVector3NearEqual(origin, other.origin, XMVectorReplicate(1e-5)) &&
+				XMVector4NearEqual(quaternion, other.quaternion, XMVectorReplicate(1e-5));
+		}
+		else
+		{
+			base = XMVector3NearEqual(position, other.position, XMVectorReplicate(1e-5)) &&
+				XMVector3NearEqual(scale, other.scale, XMVectorReplicate(1e-5)) &&
+				XMVector3NearEqual(origin, other.origin, XMVectorReplicate(1e-5)) &&
+				Yaw == other.Yaw &&
+				Pitch == other.Pitch &&
+				Roll == other.Roll;
+		}
+		if (base == false)
+			return false;
+
+
+		bool childrenSize = this->children.size() == other.children.size();
+
+		if (childrenSize == false)
+			return false;
+
+		if (childrenSize)
+			for (size_t i = 0; i < children.size(); i++)
+				if ((*children[i]) == (*other.children[i]) == false)
+					return false;
+
+		return true;
+
+	}
+	return false;
+
+
+}
+
+ bool Transform::operator==(const Transform& other) const
+{
+	if (this->composeRotationFromQuaternions == other.composeRotationFromQuaternions)
+	{
+		bool base = false;
+		if (this->composeRotationFromQuaternions)
+		{
+			base =
+				XMVector3NearEqual(position, other.position, XMVectorReplicate(1e-5)) &&
+				XMVector3NearEqual(scale, other.scale, XMVectorReplicate(1e-5)) &&
+				XMVector3NearEqual(origin, other.origin, XMVectorReplicate(1e-5)) &&
+				XMVector4NearEqual(quaternion, other.quaternion, XMVectorReplicate(1e-5));
+		}
+		else
+		{
+			base = XMVector3NearEqual(position, other.position, XMVectorReplicate(1e-5)) &&
+				XMVector3NearEqual(scale, other.scale, XMVectorReplicate(1e-5)) &&
+				XMVector3NearEqual(origin, other.origin, XMVectorReplicate(1e-5)) &&
+				Yaw == other.Yaw &&
+				Pitch == other.Pitch &&
+				Roll == other.Roll;
+		}
+		if (base == false)
+			return false;
+
+
+		//			bool childrenSize = this->children.size() == other.children.size();
+		//
+		//			if (childrenSize == false)
+		//				return false;
+		//
+		//			if (childrenSize)
+		//				for (size_t i = 0; i < children.size(); i++)
+		//					if ((*children[i]) == (*other.children[i]) == false)
+		//						return false;
+		//
+		return true;
+
+	}
+	return false;
+
+}
+
+ void Transform::setQuaternion(float x, float y, float z, float w)
 {
 	quaternion = XMVectorSet(x, y, z, w);
 	toBeUpdated = true;
@@ -160,6 +294,10 @@ void Transform::setQuaternion(float x, float y, float z, float w)
 void Transform::setComposeRotationFromQuaternions(bool b)
 {
 	composeRotationFromQuaternions = b;
+}
+
+bool Transform::getComposeRotationFromQuaternions() const {
+	return this->composeRotationFromQuaternions;
 }
 
 void Transform::setSilent(bool b) { this->update(); this->silentState = b; }

@@ -611,6 +611,9 @@ bool SceneJsonSerializer::ensureSame(std::string filepath, Scene* scene)
 		iTransformHieararchy.addChild(mi->transform.cloneHierarchy());
 
 	auto iCamera = *scene->getCamera();
+	std::vector<Light> iLights;
+	for (auto& l : scene->GetRenderSystem()->lights)
+		iLights.push_back(*l);
 
 
 	this->serializeScene(filepath, *scene);
@@ -635,6 +638,9 @@ bool SceneJsonSerializer::ensureSame(std::string filepath, Scene* scene)
 
 	auto fCamera = *scene->getCamera();
 
+	std::vector<Light> fLights;
+	for (auto& l : scene->GetRenderSystem()->lights)
+		fLights.push_back(*l);
 	
 	for (auto& pair : iMeshes)
 	{
@@ -663,6 +669,9 @@ bool SceneJsonSerializer::ensureSame(std::string filepath, Scene* scene)
 		return false;
 
 	if ((iCamera == fCamera) == false)
+		return false;
+
+	if ((iLights == fLights) == false)
 		return false;
 
 	return true;

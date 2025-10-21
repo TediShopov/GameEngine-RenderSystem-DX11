@@ -30,6 +30,17 @@ public:
 		_mm_free(p);
 	}
 
+	bool operator==(const Light& other) const
+	{
+		return
+			XMVector3NearEqual(position, other.position, XMVectorReplicate(1e-5)) &&
+			XMVector3NearEqual(XMLoadFloat3(&direction), XMLoadFloat3(&other.direction), XMVectorReplicate(1e-5)) &&
+			XMVector4NearEqual(XMLoadFloat4(&ambientColour), XMLoadFloat4(&other.ambientColour), XMVectorReplicate(1e-5)) &&
+			XMVector4NearEqual(XMLoadFloat4(&diffuseColour), XMLoadFloat4(&other.diffuseColour), XMVectorReplicate(1e-5)) &&
+			XMVector4NearEqual(XMLoadFloat4(&specularColour), XMLoadFloat4(&other.specularColour), XMVectorReplicate(1e-5));
+
+	}
+
 	void generateViewMatrix();			///< Generates and upto date view matrix, based on current rotation
 	void generateProjectionMatrix(float screenNear, float screenFar);			///< Generate project matrix based on current rotation and provided near & far plane
 	void generateOrthoMatrix(float screenWidth, float screenHeight, float near, float far);		///< Generates orthographic matrix based on supplied screen dimensions and near & far plane.

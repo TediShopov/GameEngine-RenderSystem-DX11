@@ -60,7 +60,8 @@ public:
 		this->materials.clear();
 
 		this->meshes.clear();
-		this->textureMap.clear();
+		this->textureManager->textureMap.clear();
+		this->textureManager->textureResourceMap.clear();
 	}
 
 	void reset()
@@ -69,8 +70,8 @@ public:
 		this->materials.clear();
 		this->textureManager->textureMap.clear();
 		this->textureManager->textureResourceMap.clear();
-		this->textureMap.clear();
-		this->textureMap.insert({ L"default", L"default" });
+		this->textureManager->addDefaultTexture();
+
 	}
 
 	void loadAssets()
@@ -100,7 +101,7 @@ public:
 	
 
 	 const std::map<std::wstring, std::wstring>& getTextureMap() const {
-		 return textureMap;
+		 return this->textureManager->textureAliasMap;
 	 }
 	 const std::map<std::string, Material*>& getMaterials() const {
 		 return materials;
@@ -117,8 +118,8 @@ public:
 protected:
 	ID3D11Device& device;
 	ID3D11DeviceContext& deviceContext;
-	//Texuter paths in use
-	std::map<std::wstring, std::wstring> textureMap;
+//	//Texuter paths in use
+//	std::map<std::wstring, std::wstring> textureMap;
 
 	//Materials
 	std::map<std::string, Material*> materials;

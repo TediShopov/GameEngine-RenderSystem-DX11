@@ -413,6 +413,14 @@ void RenderSystem::renderOnFullScreenOrtho(TextureShader& textureShader, RenderT
 		instance->getMaterial(), texture);
 }
 
+  void RenderSystem::reset()
+ {
+	 //Reset the items in the collections
+	 for (auto& collection : renderCollections)
+		 collection.second->clear();
+
+ }
+
  void RenderSystem::initShaders(HWND hwnd)
 {
 	bloomBlurMask.vInnerRadius = 1;
@@ -666,8 +674,7 @@ void RenderSystem::renderOnFullScreenOrtho(TextureShader& textureShader, RenderT
 		   0, 0);
    }
 
-    void RenderSystem::fillRenderCollections(MeshInstance* instance)
-   {
+    void RenderSystem::fillRenderCollections(MeshInstance* instance) {
 	   if (instance->getMaterial() != nullptr && instance->getMaterial()->name == "Wave")
 	   {
 		   if (instance->getSerializableMesh()._type == SerializableMeshType::Plane ||

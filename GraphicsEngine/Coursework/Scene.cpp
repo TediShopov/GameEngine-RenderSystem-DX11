@@ -75,14 +75,16 @@ void Scene::initSceneComposition(int screenWidth, int screenHeight)
 {
 	//auto debugTBN = new MeshInstance(assetSystem->getMesh("TangentMesh"));
 	auto debugTBN = std::make_unique<MeshInstance>(assetSystem->getMesh("TangentMesh"));
+	debugTBN->render = false;
 	debugTBN->setMaterial(assetSystem->getMaterial("Green"));
 	debugTBN->transform.setScale(1, 1, 1);
 
-	renderSystem->DestructableComponentsCollections->addRenderItem(debugTBN.get(), 500000);
+	//renderSystem->DestructableComponentsCollections->addRenderItem(debugTBN.get(), 500000);
 	meshInstances.push_back(std::move(debugTBN));
 
 	//auto debugBuoyancy = new MeshInstance(assetSystem->getMesh("SphereDebug"));
 	auto debugBuoyancy = std::make_unique<MeshInstance>(assetSystem->getMesh("SphereDebug"));
+	debugBuoyancy->render = false;
 	debugBuoyancy->setMaterial(assetSystem->getMaterial("Green"));
 	debugBuoyancy->transform.setScale(1, 1, 1);
 	debugSphere = std::move(debugBuoyancy);
@@ -91,6 +93,8 @@ void Scene::initSceneComposition(int screenWidth, int screenHeight)
 	//The hull of the ship is the primary object updated by the simulation
 	//auto shipHull = new MeshInstance(assetSystem->getMesh("Cube"));
 	auto shipHull = std::make_unique<MeshInstance>(assetSystem->getMesh("Cube"));
+	shipHull->render = false;
+	shipHull->name = "ShipHull";
 	shipHull->setMaterial(assetSystem->getMaterial("ShipMaterial"));
 	shipHull->transform.setPosition(-5, 20, 0);
 	shipHull->transform.setScale(15,2,15);
@@ -100,6 +104,7 @@ void Scene::initSceneComposition(int screenWidth, int screenHeight)
 	//The ship mesh itself it a child on top of the hull mesh
 	//auto shipMeshInstance = new MeshInstance(assetSystem->getMesh("Ship"));
 	auto shipMeshInstance = std::make_unique<MeshInstance>(assetSystem->getMesh("Ship"));
+	shipMeshInstance->name = "ShipInstance";
 	shipMeshInstance->setMaterial(assetSystem->getMaterial("ShipMaterial"));
 	shipMeshInstance->transform.setPosition(2.5 / shipHull->transform.getScale().m128_f32[0], -2, 0);
 
@@ -111,8 +116,10 @@ void Scene::initSceneComposition(int screenWidth, int screenHeight)
 		shipScalarScale * (1.0f / (shipHull->transform.getScale().m128_f32[2]))
 	);
 	shipMeshInstance->transform.setParent(&shipHull->transform);
-	renderSystem->autoInsertInRenderCollection(shipMeshInstance.get());
-	this->shipMeshInstance = shipHull.get();
+	//renderSystem->autoInsertInRenderCollection(shipMeshInstance.get());
+
+
+	//this->shipMeshInstance = shipHull.get();
 
 	meshInstances.push_back((std::move(shipHull)));
 	meshInstances.push_back((std::move(shipMeshInstance)));
@@ -128,8 +135,8 @@ void Scene::initSceneComposition(int screenWidth, int screenHeight)
 	meshInstanceTwo->transform.setScale(10, 10, 10);
 	meshInstanceTwo->setMaterial(assetSystem->getMaterial("Gravel"));
 
-	renderSystem->autoInsertInRenderCollection(meshInstanceOne.get());
-	renderSystem->autoInsertInRenderCollection(meshInstanceTwo.get());
+	//renderSystem->autoInsertInRenderCollection(meshInstanceOne.get());
+	//renderSystem->autoInsertInRenderCollection(meshInstanceTwo.get());
 
 	meshInstances.push_back(std::move(meshInstanceOne));
 	meshInstances.push_back(std::move(meshInstanceTwo));
@@ -144,22 +151,29 @@ void Scene::initSceneComposition(int screenWidth, int screenHeight)
 	normalTestMeshInstance->transform.setRoll(-90);
 
 	//this->meshes.insert({ "NormalMesh",tMesh });
-	renderSystem->autoInsertInRenderCollection(normalTestMeshInstance.get());
+	//renderSystem->autoInsertInRenderCollection(normalTestMeshInstance.get());
 	this->meshInstances.push_back(std::move(normalTestMeshInstance));
 
 	tessellationQuadInstance = std::make_unique<MeshInstance>((assetSystem->getMesh("TesselationQuad")));
+	tessellationQuadInstance->render = false;
+	tessellationQuadInstance.get()->name = "TesselatoinQuadInstance";
 	tessellationQuadInstance->setMaterial(assetSystem->getMaterial("Wave"));
 	tessellationQuadInstance->transform.setPosition(0, 0, 0);
 	tessellationQuadInstance->transform.setScale(10, 10, 10);
-
-	renderSystem->setTesselatedTerrainInstance(tessellationQuadInstance.get());
-
+	this->meshInstances.push_back(std::move(tessellationQuadInstance));
 
 
 
 	this->setRootInstances();
 
 	this->activeMeshInstance = meshInstances[1].get();
+}
+
+void Scene::assignSpecialInstances()
+{
+	auto terrainInstance = findInstance("TesselatoinQuadInstance");
+	renderSystem->setTesselatedTerrainInstance(terrainInstance);
+	this->shipMeshInstance = findInstance("ShipHull");
 }
 
 void Scene::init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight, Input* in, bool VSYNC,
@@ -183,6 +197,8 @@ void Scene::init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeig
 	initCameras();
 
 	initSceneComposition(screenWidth, screenHeight);
+	fillRenderCollections();
+	assignSpecialInstances();
 
 	//Setup scene buoyancy functionality
 	constructHullRigidBody();
@@ -448,6 +464,9 @@ void Scene::resetResources()
 	this->meshInstances.clear();
 	this->activeMeshInstance = nullptr;
 	this->assetSystem->reset();
+	this->renderSystem->reset();
+
+
 }
 
 bool Scene::render()
@@ -486,7 +505,8 @@ bool Scene::render()
 	for (size_t i = 0; i < meshInstances.size(); i++)
 	{
 		MeshInstance* instance = meshInstances[i].get();
-		renderSystem->fillRenderCollections(instance);
+		if(instance->render)
+			renderSystem->autoInsertInRenderCollection(instance);
 	}
 }
 
@@ -967,6 +987,17 @@ void Scene::testingRayGuiWindow()
 	ImGui::End();
 }
 
+
+MeshInstance* Scene::findInstance(std::string seachedName)
+{
+	auto foundTerrainInstance = 
+		std::find_if(meshInstances.begin(), meshInstances.end(), 
+			[&](const std::unique_ptr<MeshInstance>& mi) {return mi.get()->name == seachedName; });
+	if (foundTerrainInstance == meshInstances.end())
+		return nullptr;
+	return (*foundTerrainInstance).get();
+
+}
 
 void Scene::changeStateOfCamera() { activeCameraMovement = !activeCameraMovement; }
 

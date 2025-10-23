@@ -95,6 +95,10 @@ public:
 	std::vector<Light*> lights;
 
 	WaveParameters waveParams[3];
+
+	void reset();
+
+
 protected:
 
 	//--- INTIALIZATION ---

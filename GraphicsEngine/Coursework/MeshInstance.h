@@ -12,11 +12,12 @@ private:
 
 public:
 	std::string name;
-	MeshInstance() : name()
+	bool render;
+	MeshInstance() : name(), render(true)
 	{
 		
 	}
-	MeshInstance(SerializableMesh m):_mesh(m), name()
+	MeshInstance(SerializableMesh m):_mesh(m), name(), render(true)
 	{
 
 	}

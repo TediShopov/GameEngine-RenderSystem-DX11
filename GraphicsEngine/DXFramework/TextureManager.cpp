@@ -79,6 +79,7 @@ void TextureManager::loadTexture(std::wstring uid, std::wstring filename) {
 	}
 	else
 	{
+		textureAliasMap.insert({ uid,filename });
 		textureMap.insert(std::make_pair(uid, texture));
 		textureResourceMap.insert(std::make_pair(uid, resource));
 	}
@@ -166,7 +167,6 @@ void TextureManager::addDefaultTexture()
 		SRVDesc.Texture2D.MipLevels = 1;
 
 		hr = device->CreateShaderResourceView(pTexture, &SRVDesc, &texture);
-		textureMap.insert(std::make_pair(const_cast < wchar_t*>(L"default"), texture));
-	}
+		textureMap.insert(std::make_pair(const_cast < wchar_t*>(L"default"), texture)); }
 	
 }

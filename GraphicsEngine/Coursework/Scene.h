@@ -50,6 +50,7 @@ public:
 
 	bool frame() override;
 	bool render() override;
+	void assignSpecialInstances();
 
 	ID3D11Device* getDevice() const;
 	ID3D11DeviceContext* getDeviceContext() const;
@@ -192,6 +193,9 @@ private:
 	ActiveInstanceSelectorUI* activeInstanceSelectorUI;  //Updates the activeMeshInstance to what the suer selelcted in the mesh instance tre
 
 	//--- PRIVATE UTILITY METHODS ---
+
+	MeshInstance* findInstance(std::string name);
+
 	void changeStateOfCamera();
 	void constructHullRigidBody();
 	void applyTerrainDetail();

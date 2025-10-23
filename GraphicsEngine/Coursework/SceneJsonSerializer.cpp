@@ -590,9 +590,12 @@ void SceneJsonSerializer::deserializeScene(std::string filepath, Scene* scene)
 	}
 
 	writeScene->setRootInstances();
+
 	//writeScene->initRenderCollections();
 	writeScene->fillRenderCollections();
-	writeScene->activeMeshInstance = writeScene->meshInstances[0].get();
+	writeScene->assignSpecialInstances();
+	writeScene->activeMeshInstance = writeScene->meshInstances[1].get();
+
 }
 
 bool SceneJsonSerializer::ensureSame(std::string filepath, Scene* scene) 

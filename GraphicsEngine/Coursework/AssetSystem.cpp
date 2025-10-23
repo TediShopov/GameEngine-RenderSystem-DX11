@@ -1,8 +1,7 @@
 #include "AssetSystem.h"
 
 
-void AssetSystem::initMaterials()
-{
+void AssetSystem::initMaterials() {
 	const float baseMatCOLOR = 0.5f;
 	auto baseMat = new Material();
 	baseMat->name = "Base";
@@ -215,7 +214,7 @@ void AssetSystem::initMeshes()
 
 void AssetSystem::initTextures()
 {
-	this->textureMap.insert({ L"default", L"default" });
+	//this->textureMap.insert({ L"default", L"default" });
 
 	addTexture(L"res/brick1.dds", L"res/brick1.dds");
 	addTexture(L"diffuseBrick", L"res/brickwall.jpg");
@@ -249,7 +248,7 @@ void AssetSystem::initTextures()
 
  void AssetSystem::addTexture(std::wstring name, std::wstring fileapth)
 {
-	this->textureMap.insert({ name, fileapth });
+	//this->textureMap.insert({ name, fileapth });
 	textureManager->loadTexture(name, fileapth);
 }
 

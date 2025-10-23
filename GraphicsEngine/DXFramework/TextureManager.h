@@ -30,11 +30,13 @@ public:
 	ID3D11Resource* getTextureResource(std::wstring uid);
 	std::map<std::wstring, ID3D11ShaderResourceView*> textureMap;
 	std::map<std::wstring, ID3D11Resource*> textureResourceMap;
+	//Maps the name/alias of the texture to its filepath
+	std::map<std::wstring, std::wstring> textureAliasMap;
+	void addDefaultTexture();
 
 private:
 	bool does_file_exist(std::wstring fileName);
 	void generateTexture(ID3D11Device* device);
-	void addDefaultTexture();
 
 	ID3D11ShaderResourceView* texture;
 	ID3D11Device* device;

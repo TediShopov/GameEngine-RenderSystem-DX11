@@ -30,6 +30,7 @@ public:
 	{
 
 		bool equalNames = this->name == other.name;
+		bool equalRendering = this->render == other.render;
 		bool equalTransforms = this->transform == other.transform;
 		bool equalMaterials = true;
 
@@ -40,7 +41,7 @@ public:
 			equalMaterials = this->_material == nullptr && other._material == nullptr;
 
 		bool equalMeshes = this->_mesh == other._mesh;
-		return equalNames && equalTransforms && equalMaterials && equalMeshes;
+		return equalNames && equalTransforms && equalMaterials && equalMeshes  && equalRendering;
 	}
 
 

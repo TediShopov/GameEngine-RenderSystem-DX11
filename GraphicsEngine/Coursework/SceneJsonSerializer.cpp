@@ -183,40 +183,40 @@ Material* SceneJsonSerializer::jsonToMaterial(json::jobject materialsJson)
 	//Blend
 	auto blend = materialsJson["Blend"].is_true();
 	mat->blend = blend;
-	
-		//TexturePath
-	//Manualy remove some unnessecasary escapings
+
+	//TexturePath
+//Manualy remove some unnessecasary escapings
 
 	if (materialsJson.has_key("DiffuseTexture"))
 	{
 		std::string diffuse = materialsJson["DiffuseTexture"];
 		remove_unnecessary_escapings(diffuse);
-		std::wstring str=  StringToWChar(diffuse);
+		std::wstring str = StringToWChar(diffuse);
 		//assetSystem.textureManager.get().at(str.c_str());
 		mat->diffuseTexture = str.c_str();
 	}
 
-		if (materialsJson.has_key("NormalTexture"))
-		{
-			std::string normal = materialsJson["NormalTexture"];
-			remove_unnecessary_escapings(normal);
-			std::wstring str =  wstring(StringToWChar(normal));
-			//this->_scene->textureMap.at(str.c_str());
+	if (materialsJson.has_key("NormalTexture"))
+	{
+		std::string normal = materialsJson["NormalTexture"];
+		remove_unnecessary_escapings(normal);
+		std::wstring str = wstring(StringToWChar(normal));
+		//this->_scene->textureMap.at(str.c_str());
 
-			mat->normalTexture = str.c_str();
-		}
-	
-	
-		if (materialsJson.has_key("DisplacementTexture"))
-		{
-			std::string displacement = materialsJson["DisplacementTexture"];
-			remove_unnecessary_escapings(displacement);
-			std::wstring str =  wstring(StringToWChar(displacement));
-			//this->_scene->textureMap.at(str.c_str());
+		mat->normalTexture = str.c_str();
+	}
 
-			mat->displacementTexture = str.c_str();
-		}
-	
+
+	if (materialsJson.has_key("DisplacementTexture"))
+	{
+		std::string displacement = materialsJson["DisplacementTexture"];
+		remove_unnecessary_escapings(displacement);
+		std::wstring str = wstring(StringToWChar(displacement));
+		//this->_scene->textureMap.at(str.c_str());
+
+		mat->displacementTexture = str.c_str();
+	}
+
 
 	//Color components
 	mat->ambient = XMFLOAT3(JSONARR012(get_entry(materialsJson, "Ambient")));
@@ -225,6 +225,7 @@ Material* SceneJsonSerializer::jsonToMaterial(json::jobject materialsJson)
 	mat->emissive = XMFLOAT3(JSONARR012(get_entry(materialsJson, "Emissive")));
 
 	mat->shininess = std::stof(materialsJson["Shininess"]);
+	mat->reflectionFactor = std::stof(materialsJson["ReflectionFactor"]);
 	return mat;
 }
 void SceneJsonSerializer::jsonToTransform(json::jobject jobj, Transform& transform)
@@ -244,6 +245,7 @@ void SceneJsonSerializer::jsonToMeshInstance(json::jobject obj, Scene * scene, M
 	MeshInstance* meshInstance = new MeshInstance();
 
 	meshInstance->name = obj["Name"].as_string();
+	meshInstance->render = obj["Render"].is_true();
 
 	//Transform
 
@@ -420,6 +422,7 @@ json::jobject SceneJsonSerializer::materialJson(std::pair<std::string, Material*
 	}
 	
 	materialJson["Shininess"] = pair.second->shininess;
+	materialJson["ReflectionFactor"] = pair.second->reflectionFactor;
 	materialJson["Diffuse"] = XMFloat3ToVec(pair.second->diffuse);
 	materialJson["Ambient"] = XMFloat3ToVec(pair.second->ambient);
 	materialJson["Specular"] = XMFloat3ToVec(pair.second->specular);
@@ -432,6 +435,7 @@ json::jobject SceneJsonSerializer::meshInstanceJson(const MeshInstance* rootInst
 	
 	json::jobject instanceJson;
 	instanceJson["Name"] = rootInstance->name;
+	instanceJson["Render"].set_boolean(rootInstance->render);
 	instanceJson["Transform"] = transformJson(rootInstance->transform);
 	std::string materialName;
 	 Material* foundMaterial = nullptr;

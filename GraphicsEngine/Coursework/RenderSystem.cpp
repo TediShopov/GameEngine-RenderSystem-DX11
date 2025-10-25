@@ -280,6 +280,9 @@ void RenderSystem::renderScene(const XMMATRIX view, const XMMATRIX projection)
 		renderDebugInstancesPass();
 
 
+	//sceneRT->setAsRenderTarget(getDeviceContext());
+
+
 
 	getDeviceContext()->RSSetState(_rasterizedStateCullOff.Get());
 	DestructableComponentsCollections->SetupShaderAndRenderAllItems(getDeviceContext());
@@ -453,6 +456,9 @@ void RenderSystem::renderOnFullScreenOrtho(TextureShader& textureShader, RenderT
 	horizontalBlur = std::make_unique< Blur>(d, hwnd,L"HorizontalBlurPixelShader.cso");
 	verticalBlur = std::make_unique< Blur>(d, hwnd,L"VerticalBlurPixelShader.cso");
 
+	gizmoShader = std::make_unique<GizmoShader>(d, hwnd);
+	gizmosOverlay = std::make_unique<GizmosOverlay>(d, hwnd);
+
 	////--- COMPUTE SHADERS
 	//buoyancyComputeShader = new BuoyancyComputeShader(d, hwnd, 15, 15);
 
@@ -465,6 +471,7 @@ void RenderSystem::renderOnFullScreenOrtho(TextureShader& textureShader, RenderT
 	 bloomTextureOne = std::make_unique< RenderTexture>(getDevice(), sWidth, sHeight, 1, 100);
 	 bloomTextureTwo = std::make_unique< RenderTexture>(getDevice(), sWidth, sHeight, 1, 100);
 	 passChain = new PostProcessPassChain(renderer->getDevice(), sWidth, sHeight, 0.1, 200);
+	 gizmosRenderTexture = std::make_unique<RenderTexture>(getDevice(), sWidth, sHeight, SCREEN_NEAR, SCREEN_DEPTH);
  }
 
    void RenderSystem::initRasterStates()
@@ -555,6 +562,15 @@ void RenderSystem::renderOnFullScreenOrtho(TextureShader& textureShader, RenderT
 		  {
 			  setupInstanceParameter(*ls, instnace);
 		  });
+
+	  gizmosRenderCollection = std::make_unique<RenderItemCollection>(gizmoShader.get(),
+		  [&](DefaultShader* sh) { setupBaseShaderParamters(*sh); },
+		  [&](DefaultShader* ls, MeshInstance* instnace) { setupInstanceParameter(*ls, instnace);});
+		  
+		  
+		  
+		  
+
 
 	  this->renderCollections.insert({ defaultShadowShader.get(), defaultRenderCollection});
 	  this->renderCollections.insert({ normalMapRenderCollection->shaderToRenderWith, normalMapRenderCollection });
@@ -699,6 +715,11 @@ void RenderSystem::renderOnFullScreenOrtho(TextureShader& textureShader, RenderT
 	   this->renderCollections.at(defaultShadowShader.get())->push_back(instance);
    }
 
+	void RenderSystem::addGizmoInstance(MeshInstance* instance)
+	{
+		gizmosRenderCollection->push_back(instance);
+	}
+
     void RenderSystem::autoInsertInRenderCollection(MeshInstance* instance)
    {
 	   if (instance->getMaterial() != nullptr && instance->getMaterial()->name == "Wave")
@@ -732,125 +753,145 @@ void RenderSystem::renderOnFullScreenOrtho(TextureShader& textureShader, RenderT
 
     bool RenderSystem::render()
    {
-	   // Generate the view matrix based on the camera's position.
-	   camera->update();
+		// Generate the view matrix based on the camera's position.
+		camera->update();
 
 
-	   renderer->setBackBufferRenderTarget();
-	   passChain->Reset();
+		renderer->setBackBufferRenderTarget();
+		passChain->Reset();
 
-	   XMMATRIX viewMatrix;
-	   XMMATRIX projectionMatrix;
-	   //	if (input->isKeyDown('V'))
-	   //	{
-	   //		projectionMatrix = cascadedShadowMaps->getOrthoMatrix(0);
-	   //		viewMatrix = cascadedShadowMaps->getViewMatrix(0);
-	   //	}
-	   //	else if (input->isKeyDown('B'))
-	   //	{
-	   //		projectionMatrix = cascadedShadowMaps->getOrthoMatrix(1);
-	   //		viewMatrix = cascadedShadowMaps->getViewMatrix(1);
-	   //	}
-	   //	else if (input->isKeyDown('N'))
-	   //	{
-	   //		projectionMatrix = cascadedShadowMaps->getOrthoMatrix(2);
-	   //		viewMatrix = cascadedShadowMaps->getViewMatrix(2);
-	   //	}
-	   //	else
-	   //	{
-	   //		viewMatrix = camera->getViewMatrix();
-	   //		projectionMatrix = renderer->getProjectionMatrix();
-	   //	}
-	   viewMatrix = camera->getViewMatrix();
-	   projectionMatrix = renderer->getProjectionMatrix();
+		XMMATRIX viewMatrix;
+		XMMATRIX projectionMatrix;
+		//	if (input->isKeyDown('V'))
+		//	{
+		//		projectionMatrix = cascadedShadowMaps->getOrthoMatrix(0);
+		//		viewMatrix = cascadedShadowMaps->getViewMatrix(0);
+		//	}
+		//	else if (input->isKeyDown('B'))
+		//	{
+		//		projectionMatrix = cascadedShadowMaps->getOrthoMatrix(1);
+		//		viewMatrix = cascadedShadowMaps->getViewMatrix(1);
+		//	}
+		//	else if (input->isKeyDown('N'))
+		//	{
+		//		projectionMatrix = cascadedShadowMaps->getOrthoMatrix(2);
+		//		viewMatrix = cascadedShadowMaps->getViewMatrix(2);
+		//	}
+		//	else
+		//	{
+		//		viewMatrix = camera->getViewMatrix();
+		//		projectionMatrix = renderer->getProjectionMatrix();
+		//	}
+		viewMatrix = camera->getViewMatrix();
+		projectionMatrix = renderer->getProjectionMatrix();
 
-	   defaultShadowShader->ssrParameters.useSSR = false;
-	   tesselateWaveShader->ssrParameters.useSSR = false;
-	   //	//	//do an object render pass for color and depth buffer
-	   renderSceneToTexture(*passChain->Out, viewMatrix, projectionMatrix);
-	   colourShaderResourceView = passChain->Out->getShaderResourceView();
-	   depthShaderResourceView = passChain->Out->getDepthShaderResourceView();
-	   passChain->Swap();
-	   defaultShadowShader->ssrParameters.useSSR = true;
-	   tesselateWaveShader->ssrParameters.useSSR = true;
-	   //renderSkyboxPass();
-	   //  //Do cascaded shadow map pass for the direction light in the scene
-	   cascadedShadowMapPass(*lights[2]);
-	   //renderer->resetViewport();
-	   renderer->resetViewport();
+		defaultShadowShader->ssrParameters.useSSR = false;
+		tesselateWaveShader->ssrParameters.useSSR = false;
+		//	//	//do an object render pass for color and depth buffer
+		renderSceneToTexture(*passChain->Out, viewMatrix, projectionMatrix);
+		colourShaderResourceView = passChain->Out->getShaderResourceView();
+		depthShaderResourceView = passChain->Out->getDepthShaderResourceView();
+		passChain->Swap();
+		defaultShadowShader->ssrParameters.useSSR = true;
+		tesselateWaveShader->ssrParameters.useSSR = true;
+		//renderSkyboxPass();
+		//  //Do cascaded shadow map pass for the direction light in the scene
+		cascadedShadowMapPass(*lights[2]);
+		//renderer->resetViewport();
+		renderer->resetViewport();
 
-	   if (isRenderSceneToTexture)
-		   renderSceneToTexture(*passChain->Out, viewMatrix, projectionMatrix);
-	   else
-		   renderScene(viewMatrix, projectionMatrix);
+		if (isRenderSceneToTexture)
+			renderSceneToTexture(*passChain->Out, viewMatrix, projectionMatrix);
+		else
+			renderScene(viewMatrix, projectionMatrix);
 
-	   if (isRenderSceneToTexture)
-	   {
-		   this->renderer->setZBuffer(false);
-		   if (isPostProcessing)
-		   {
-			   if (enableBloom)
-			   {
-				   passChain->Swap();
 
-				   thresholdPass->thresholdData.threshold = 1;
-				   doPostProcessingPass(*thresholdPass, *bloomTextureOne, *passChain->In);
-				   //thresholdPass(bloomTextureOne, passChain->In);
-				   //horizontalBlurPass(bloomTextureTwo, bloomTextureOne, bloomBlurMask);
+		//Gizmos pass - after rendering the scene but before post processing ???
+		//Setup the gizmos render texture to be the one to write
 
-				   horizontalBlur->viggnete = bloomBlurMask;
-				   doPostProcessingPass(*horizontalBlur, *bloomTextureTwo, *bloomTextureOne);
+		auto ctx = getDeviceContext();
 
-				   verticalBlur->viggnete = bloomBlurMask;
-				   doPostProcessingPass(*verticalBlur, *bloomTextureOne, *bloomTextureTwo);
-				   //verticalBlurPass(bloomTextureOne, bloomTextureTwo, bloomBlurMask);
-				   //$bloomCompositePass(passChain->Out, passChain->In, bloomTextureOne, 5, 5);
-				   bloomCompositePass->bloomData.bloomIntensity = 5;
-				   bloomCompositePass->bloomData.exposure = 5;
-				   bloomCompositePass->extractedTexture = bloomTextureOne->getShaderResourceView();
-				   doPostProcessingPass(*bloomCompositePass, *passChain->Out, *passChain->In);
-			   }
+		gizmosRenderTexture->clearRenderTarget(getDeviceContext(), 0, 0, 0, 0);
+		gizmosRenderTexture->setAsRenderTarget(getDeviceContext());
 
-			   if (enableBlur)
-			   {
-				   passChain->Swap();
-				   horizontalBlur->viggnete = edgeBlurMask;
-				   doPostProcessingPass(*horizontalBlur, *passChain->Out, *passChain->In);
+		GizmoShader::GizmosShaderData data{ XMFLOAT4{1,0,0,1} };
+		gizmoShader->GizmoDataBuffer.SetTo(getDeviceContext(), &data);
 
-				   passChain->Swap();
-				   verticalBlur->viggnete = edgeBlurMask;
-				   doPostProcessingPass(*verticalBlur, *passChain->Out, *passChain->In);
-			   }
+		gizmosRenderCollection->SetupShaderAndRenderAllItems(getDeviceContext());
 
-			   if (enableWaterDistortion)
-			   {
-				   passChain->Swap();
-
-				   distortionBuffer.time = appTime;
-				   underwaterEffectShader->setBlurredTexture(renderer->getDeviceContext(), passChain->In->getShaderResourceView());
-				   underwaterEffectShader->setDistortionParameters(renderer->getDeviceContext(), distortionBuffer, edgeBlurMask);
-				   doPostProcessingPass(*underwaterEffectShader, *passChain->Out, *passChain->In);
-			   }
-
-			   if (enableMagnify)
-			   {
-				   passChain->Swap();
-				   //magnifyPass(passChain->Out, passChain->In);
-				   magnify->vignette = magnifyMask;
-				   doPostProcessingPass(*magnify, *passChain->Out, *passChain->In);
-			   }
-		   }
-		   this->renderer->setZBuffer(true);
-		   renderer->setBackBufferRenderTarget();
-		   renderDefaultTexture(*passChain->Out);
-	   }
-
-	   //Debug items are consumed on frame
-	   this->debugItems.clear();
+		gizmosOverlay->gizmosSRV = gizmosRenderTexture->getShaderResourceView();
+		passChain->Swap();
+		doPostProcessingPass(*gizmosOverlay, *passChain->Out, *passChain->In);
 
 
 
-	   return true;
+		if (isRenderSceneToTexture)
+		{
+			this->renderer->setZBuffer(false);
+			if (isPostProcessing)
+			{
+				if (enableBloom)
+				{
+					passChain->Swap();
+
+					thresholdPass->thresholdData.threshold = 1;
+					doPostProcessingPass(*thresholdPass, *bloomTextureOne, *passChain->In);
+					//thresholdPass(bloomTextureOne, passChain->In);
+					//horizontalBlurPass(bloomTextureTwo, bloomTextureOne, bloomBlurMask);
+
+					horizontalBlur->viggnete = bloomBlurMask;
+					doPostProcessingPass(*horizontalBlur, *bloomTextureTwo, *bloomTextureOne);
+
+					verticalBlur->viggnete = bloomBlurMask;
+					doPostProcessingPass(*verticalBlur, *bloomTextureOne, *bloomTextureTwo);
+					//verticalBlurPass(bloomTextureOne, bloomTextureTwo, bloomBlurMask);
+					//$bloomCompositePass(passChain->Out, passChain->In, bloomTextureOne, 5, 5);
+					bloomCompositePass->bloomData.bloomIntensity = 5;
+					bloomCompositePass->bloomData.exposure = 5;
+					bloomCompositePass->extractedTexture = bloomTextureOne->getShaderResourceView();
+					doPostProcessingPass(*bloomCompositePass, *passChain->Out, *passChain->In);
+				}
+
+				if (enableBlur)
+				{
+					passChain->Swap();
+					horizontalBlur->viggnete = edgeBlurMask;
+					doPostProcessingPass(*horizontalBlur, *passChain->Out, *passChain->In);
+
+					passChain->Swap();
+					verticalBlur->viggnete = edgeBlurMask;
+					doPostProcessingPass(*verticalBlur, *passChain->Out, *passChain->In);
+				}
+
+				if (enableWaterDistortion)
+				{
+					passChain->Swap();
+
+					distortionBuffer.time = appTime;
+					underwaterEffectShader->setBlurredTexture(renderer->getDeviceContext(), passChain->In->getShaderResourceView());
+					underwaterEffectShader->setDistortionParameters(renderer->getDeviceContext(), distortionBuffer, edgeBlurMask);
+					doPostProcessingPass(*underwaterEffectShader, *passChain->Out, *passChain->In);
+				}
+
+				if (enableMagnify)
+				{
+					passChain->Swap();
+					//magnifyPass(passChain->Out, passChain->In);
+					magnify->vignette = magnifyMask;
+					doPostProcessingPass(*magnify, *passChain->Out, *passChain->In);
+				}
+			}
+			this->renderer->setZBuffer(true);
+			renderer->setBackBufferRenderTarget();
+			renderDefaultTexture(*passChain->Out);
+		}
+
+		//Debug items are consumed on frame
+		this->debugItems.clear();
+
+
+
+		return true;
    }
 
     void RenderSystem::renderDefaultTexture(RenderTexture& out)

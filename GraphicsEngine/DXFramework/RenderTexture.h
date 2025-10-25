@@ -39,6 +39,7 @@ public:
 
 	void setAsRenderTarget(ID3D11DeviceContext* deviceContext);		///< Set this render texture as the render target
 	void clearRenderTarget(ID3D11DeviceContext* deviceContext, float red, float green, float blue, float alpha);	///< Empties the render texture, provide device context and RGBA (background colour)
+	ID3D11RenderTargetView* getRenderTargetView();			
 	ID3D11ShaderResourceView* getShaderResourceView();			///< Get the data from this render target as a texture resource.
 	ID3D11Texture2D* getDepthTexture();
 	ID3D11ShaderResourceView* getDepthShaderResourceView();

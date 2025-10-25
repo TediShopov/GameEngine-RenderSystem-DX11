@@ -122,6 +122,10 @@ protected:
 	void renderPointsAboveAndBelow(XMMATRIX view, XMMATRIX projection);
 
 #pragma region Ship Controller
+
+	//--- GIZMOS AND EDITOR ---
+	void updateTransformGizmos(); 
+
 	//--- SHIP CONTROLLER ---
 	const float steeringTorqueAmount = 100000.f;
 
@@ -184,6 +188,12 @@ private:
 	//--- SPECIAL INSTANCES ---
 	std::unique_ptr<MeshInstance> tessellationQuadInstance;  //The buoyant mesh in the scene
 	//std::unique_ptr<MeshInstance> shipMeshInstance;
+
+	std::unique_ptr<MeshInstance> transformGizmoUp; 
+	std::unique_ptr<MeshInstance> transformGizmoRight; 
+	std::unique_ptr<MeshInstance> transformGizmoForward; 
+	
+
 	MeshInstance* shipMeshInstance;
 	std::unique_ptr<MeshInstance> debugSphere;
 

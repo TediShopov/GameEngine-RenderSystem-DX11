@@ -34,7 +34,9 @@ void AssetSystem::initMaterials() {
 	blue->specular = debugSpecular;
 	blue->diffuse = XMFLOAT3(0, 0, 1);
 	blue->diffuseTexture = L"default";
-	blue->normalTexture = L"shipNormal";
+	//blue->normalTexture = L"shipNormal";
+	//blue->normalTexture = L"shipNormal";
+	blue->normalTexture = L"default";
 
 	auto green = blue->Copy();
 	green->name = "Green";

@@ -39,6 +39,8 @@
 #include "insideOutsideShader.h"
 #include "ProceduralDestruction.h"
 #include "DestructableTerrainPeaks.h"
+#include "GizmoShader.h"
+#include "GizmosOverlay.h"
 #include <random>
 #include <cmath>
 #include <wrl/client.h>
@@ -65,6 +67,7 @@ public:
 
 	void addDebugInstance(std::unique_ptr<MeshInstance> meshInstance);
 	void fillRenderCollections(MeshInstance* instance);
+	void addGizmoInstance(MeshInstance* instance);
 	void autoInsertInRenderCollection(MeshInstance* instance);
 
 	TerrainTesselationShader* getTerrainShader() const;
@@ -184,8 +187,10 @@ protected:
 	std::unique_ptr<TextureShader> textureShader;
 	std::unique_ptr<WaveShader> gerstnerWaveShader;
 	std::unique_ptr<TesselatedGerstnerWaveShader> tesselateWaveShader;
+	std::unique_ptr<GizmoShader> gizmoShader;
 
 	//--- POST-PROCESSING SHADERS ---
+	std::unique_ptr<GizmosOverlay> gizmosOverlay;
 	std::unique_ptr<UnderwaterEffectShader> underwaterEffectShader;
 	std::unique_ptr<Blur> horizontalBlur;
 	std::unique_ptr<Blur> verticalBlur;
@@ -198,6 +203,7 @@ protected:
 	std::unique_ptr<RenderTexture> effectRT;
 	std::unique_ptr<RenderTexture> bloomTextureOne;
 	std::unique_ptr<RenderTexture> bloomTextureTwo;
+	std::unique_ptr<RenderTexture> gizmosRenderTexture;
 
 	std::unique_ptr<OrthoMesh> orthoMesh;
 	std::unique_ptr<OrthoMesh> fullScreenOrthoMesh;
@@ -227,5 +233,6 @@ protected:
 	//--RENDER COLLECTIONS--
 	//Render collection skupecify a different render strategy for their objects
 	std::map<DefaultShader*, RenderItemCollection*> renderCollections;
+	std::unique_ptr<RenderItemCollection> gizmosRenderCollection;
 
 };

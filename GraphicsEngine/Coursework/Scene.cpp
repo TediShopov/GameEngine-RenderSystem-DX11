@@ -174,6 +174,31 @@ void Scene::assignSpecialInstances()
 	auto terrainInstance = findInstance("TesselatoinQuadInstance");
 	renderSystem->setTesselatedTerrainInstance(terrainInstance);
 	this->shipMeshInstance = findInstance("ShipHull");
+
+	//Gizmos are also treated as special mesh instances as they are not in the mesh instances tree
+	auto cubeMesh = assetSystem->getMesh("Cube");
+
+	//Assigne the cube mesh to the transform gizmos
+	transformGizmoForward = std::make_unique<MeshInstance>(cubeMesh);
+	transformGizmoRight = std::make_unique<MeshInstance>(cubeMesh);
+	transformGizmoUp = std::make_unique<MeshInstance>(cubeMesh);
+
+	transformGizmoForward->setMaterial(assetSystem->getMaterial("Blue"));
+	transformGizmoRight->setMaterial(assetSystem->getMaterial("Red"));
+	transformGizmoUp->setMaterial(assetSystem->getMaterial("Green"));
+
+//	transformGizmoForward->transform.setScale(10,10,10);
+//	transformGizmoRight->transform.setScale(10,10,10);
+//	transformGizmoUp->transform.setScale(10,10,10);
+	transformGizmoForward->transform.setScale(1,1,10);
+	transformGizmoRight->transform.setScale(10,1,1);
+	transformGizmoUp->transform.setScale(1,10,1);
+
+	this->renderSystem->addGizmoInstance(transformGizmoForward.get());
+	this->renderSystem->addGizmoInstance(transformGizmoUp.get());
+	this->renderSystem->addGizmoInstance(transformGizmoRight.get());
+
+
 }
 
 void Scene::init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight, Input* in, bool VSYNC,
@@ -385,6 +410,9 @@ bool Scene::frame()
 
 	}
 	applyShipForces();
+
+	updateTransformGizmos();
+
 
 	activeInstanceSelectorUI->updateStateOfUI(this);
 	appTime += timer->getTime();
@@ -712,6 +740,19 @@ void Scene::renderPointsAboveAndBelow(XMMATRIX view, XMMATRIX projection)
 	renderDebugSphereAt(view, projection, proceduralDestruction.pAbovePlane, assetSystem->getMaterial("Green"));
 	renderDebugSphereAt(view, projection, proceduralDestruction.pBelowPlane, assetSystem->getMaterial("Red"));
 	renderDebugSphereAt(view, projection, proceduralDestruction.pIntersections, assetSystem->getMaterial("Cyan"));
+}
+
+//--- GIZMOS AND EDITOR ---
+
+ void Scene::updateTransformGizmos()
+{
+	 if (this->activeMeshInstance != nullptr)
+	 {
+		 transformGizmoForward->transform.setPosition(activeMeshInstance->transform.getGlobalPosition());
+		 transformGizmoRight->transform.setPosition(activeMeshInstance->transform.getGlobalPosition());
+		 transformGizmoUp->transform.setPosition(activeMeshInstance->transform.getGlobalPosition());
+	 }
+
 }
 
 void Scene::gui()

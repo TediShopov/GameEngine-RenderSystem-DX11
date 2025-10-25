@@ -281,6 +281,8 @@
     <ClCompile Include="CascadedShadowMaps.cpp" />
     <ClCompile Include="DestructableTerrainPeaks.cpp" />
     <ClCompile Include="DisplacementShader.cpp" />
+    <ClCompile Include="GizmoShader.cpp" />
+    <ClCompile Include="GizmosOverlay.cpp" />
     <ClCompile Include="HorizontalBlur.cpp" />
     <ClCompile Include="insideOutsideShader.cpp" />
     <ClCompile Include="LightEditorUI.cpp" />
@@ -330,6 +332,8 @@
     <ClInclude Include="CascadedShadowMaps.h" />
     <ClInclude Include="DestructableTerrainPeaks.h" />
     <ClInclude Include="DisplacementShader.h" />
+    <ClInclude Include="GizmoShader.h" />
+    <ClInclude Include="GizmosOverlay.h" />
     <ClInclude Include="HorizontalBlur.h" />
     <ClInclude Include="insideOutsideShader.h" />
     <ClInclude Include="LightEditorUI.h" />
@@ -435,6 +439,22 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Domain</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="GizmoPixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Deploy|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Deploy|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="GizmosOverlayPixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Deploy|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Deploy|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="HorizontalBlurPixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

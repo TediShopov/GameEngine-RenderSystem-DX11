@@ -178,6 +178,8 @@ void Scene::assignSpecialInstances()
 	//Gizmos are also treated as special mesh instances as they are not in the mesh instances tree
 	auto cubeMesh = assetSystem->getMesh("Cube");
 
+	exclusiveGizmos.clear();
+
 	//Assigne the cube mesh to the transform gizmos
 	transformGizmoForward = std::make_unique<TransformGizmo>(XMFLOAT3 {0,0,1}, sWidth, sHeight, cubeMesh);
 	transformGizmoRight = std::make_unique<TransformGizmo>(XMFLOAT3{1,0,0}, sWidth, sHeight, cubeMesh);

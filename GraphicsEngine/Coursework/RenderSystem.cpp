@@ -423,6 +423,8 @@ void RenderSystem::renderOnFullScreenOrtho(TextureShader& textureShader, RenderT
 	 for (auto& collection : renderCollections)
 		 collection.second->clear();
 
+	 this->gizmosRenderCollection->clear();
+
  }
 
  void RenderSystem::initShaders(HWND hwnd)

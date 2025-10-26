@@ -5,6 +5,7 @@
 #include <locale.h>
 #include <codecvt>
 #include <algorithm>
+#include <future>
 
 #define JSONARR012(jsonArr) std::stof(jsonArr.array(0)), std::stof(jsonArr.array(1)), std::stof(jsonArr.array(2))
 
@@ -551,33 +552,58 @@ void SceneJsonSerializer::deserializeScene(std::string filepath, Scene* scene)
 	//this->jsonToLight(get_entry(jsonScene, "Lights").array(0), writeScene->lights[0]);
 	this->jsonToLight(get_entry(jsonScene, "Lights").array(0), renderSystem->lights[0]);
 
-	//this->_scene->lights.push_back(&this->_scene->white_point_light);
-	//Load Meshes
+
+	std::vector<std::future<void>> meshFutures;
+
+
 	json::jobject meshesJson = get_entry(jsonScene, "Meshes");
+	meshFutures.reserve(meshesJson.size());
+	std::mutex meshMutex;
 	for (size_t i = 0; i < meshesJson.size(); i++)
 	{
-		std::string name = meshesJson.array(i).as_object()["Name"];
-		std::string filename = meshesJson.array(i).as_object()["Filename"];
+		meshFutures.emplace_back(std::async(std::launch::async, [&,i]() {
+			std::string name = meshesJson.array(i).as_object()["Name"];
+			std::string filename = meshesJson.array(i).as_object()["Filename"];
 
-		remove_unnecessary_escapings(name);
-		remove_unnecessary_escapings(filename);
+			remove_unnecessary_escapings(name);
+			remove_unnecessary_escapings(filename);
 
-		//BaseMesh* mesh = this->jsonToMesh(meshesJson.array(i).as_object(),this->_scene->getDevice());
-		SerializableMesh mesh=this->jsonToMesh(meshesJson.array(i).as_object(), writeScene->getDevice());
-		mesh.CreateMesh(writeScene->getDevice(), writeScene->getDeviceContext());
-		assetSystem->addMesh(name,mesh);
+			//BaseMesh* mesh = this->jsonToMesh(meshesJson.array(i).as_object(),this->_scene->getDevice());
+			SerializableMesh mesh = this->jsonToMesh(meshesJson.array(i).as_object(), writeScene->getDevice());
+			mesh.CreateMesh(writeScene->getDevice(), writeScene->getDeviceContext());
+
+			std::lock_guard<std::mutex> lock(meshMutex);
+			assetSystem->addMesh(name, mesh);
+
+
+			}));
+
+
 	}
 
 	//Load Textures 
+	std::vector<std::future<void>> textureFutures; 
 	json::jobject texturesJson = get_entry(jsonScene, "TexturePaths");
+	textureFutures.reserve(texturesJson.size());
 	for (size_t i = 0; i < texturesJson.size(); i++)
 	{
-		//Add ID3D11ShaderResourceView to ID3D11ShaderResourceView in scene		 
-		auto t = this->jsonToTexture(texturesJson.array(i), *assetSystem);
-		if (t.first != L"default")
-			assetSystem->addTexture(t.first, t.second);
+		textureFutures.emplace_back(std::async(std::launch::async, [&, i]() {
+			auto t = this->jsonToTexture(texturesJson.array(i), *assetSystem);
+			if (t.first != L"default")
+				assetSystem->addTexture(t.first, t.second);
+
+			}));
+
+
 	}
 
+
+	// Wait for all mesh futures
+    for (auto& f : meshFutures)
+        f.get();
+	// Wait for all texture futures
+    for (auto& t : textureFutures)
+        t.get();
 	//Load Materials
 	json::jobject materialsJson = jsonScene["Materials"];
 	for (size_t i = 0; i < materialsJson.size(); i++)
@@ -586,12 +612,21 @@ void SceneJsonSerializer::deserializeScene(std::string filepath, Scene* scene)
 		assetSystem->addMaterial(mat->name, mat);
 	}
 
+
+
+
+
+
 	//BaseMesh Instances -- Level 1 (Roots)
 	json::jobject meshInstancesJson = get_entry(jsonScene, "MeshInstances");
 	for (size_t i = 0; i < meshInstancesJson.size(); i++)
 	{
 		this->jsonToMeshInstance(meshInstancesJson.array(i),scene);
 	}
+
+
+
+
 
 	writeScene->setRootInstances();
 

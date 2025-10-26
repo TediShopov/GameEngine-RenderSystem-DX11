@@ -18,6 +18,11 @@ TextureManager::TextureManager(ID3D11Device* ldevice, ID3D11DeviceContext* ldevi
 void TextureManager::loadTexture(std::wstring uid, std::wstring filename) {
 	HRESULT result;
 
+
+	 HRESULT hrCo = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	 bool comInitialized = SUCCEEDED(hrCo) || hrCo == RPC_E_CHANGED_MODE;
+
+
 	// check if file exists
 	if (filename.empty())
 	{
@@ -41,6 +46,8 @@ void TextureManager::loadTexture(std::wstring uid, std::wstring filename) {
 
 	idx = fn.rfind('.');
 
+	ID3D11ShaderResourceView* texture;
+
 	if (idx != std::string::npos)
 	{
 		extension = fn.substr(idx + 1);
@@ -54,12 +61,13 @@ void TextureManager::loadTexture(std::wstring uid, std::wstring filename) {
 	// Load the texture in.
 	if (extension == L"dds")
 	{
-		result = CreateDDSTextureFromFile(device, deviceContext, filename.c_str(), &resource, &texture);
+		//result = CreateDDSTextureFromFile(device, deviceContext, filename.c_str(), &resource, &texture);
+		result = CreateDDSTextureFromFile(device,  filename.c_str(), &resource, &texture);
 	}
 	else
 	{
 
-		D3D11_SHADER_RESOURCE_VIEW_DESC* outDesc = new D3D11_SHADER_RESOURCE_VIEW_DESC();
+		//D3D11_SHADER_RESOURCE_VIEW_DESC* outDesc = new D3D11_SHADER_RESOURCE_VIEW_DESC();
 		result = CreateWICTextureFromFile(device, filename.c_str(), &resource, &texture, 0);
 
 
@@ -69,8 +77,8 @@ void TextureManager::loadTexture(std::wstring uid, std::wstring filename) {
 //			D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET, 0, 0, false,nullptr, &texture);
 
 		
-		texture->GetDesc(outDesc);
-		int a = 3;
+		//texture->GetDesc(outDesc);
+		//int a = 3;
 	}
 	
 	if (FAILED(result))
@@ -79,21 +87,25 @@ void TextureManager::loadTexture(std::wstring uid, std::wstring filename) {
 	}
 	else
 	{
+		std::lock_guard<std::mutex> lock(this->textureResourceMutex); // protect maps
 		textureAliasMap.insert({ uid,filename });
 		textureMap.insert(std::make_pair(uid, texture));
 		textureResourceMap.insert(std::make_pair(uid, resource));
 	}
+
+	if (SUCCEEDED(hrCo))
+		CoUninitialize();
 }
 
 
 // Release resource.
 TextureManager::~TextureManager()
 {
-	if (texture)
-	{
-		texture->Release();
-		texture = 0;
-	}
+//	if (texture)
+//	{
+//		texture->Release();
+//		texture = 0;
+//	}
 }
 
 // Return texture as a shader resource.
@@ -158,6 +170,8 @@ void TextureManager::addDefaultTexture()
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
 	HRESULT hr = device->CreateTexture2D(&desc, &initData, &pTexture);
+
+	ID3D11ShaderResourceView* texture;
 
 	if (SUCCEEDED(hr))
 	{

@@ -15,6 +15,7 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <mutex>
 //#include "Texture.h"
 
 using namespace DirectX;
@@ -35,10 +36,11 @@ public:
 	void addDefaultTexture();
 
 private:
+	std::mutex textureResourceMutex;
 	bool does_file_exist(std::wstring fileName);
 	void generateTexture(ID3D11Device* device);
 
-	ID3D11ShaderResourceView* texture;
+	//ID3D11ShaderResourceView* texture;
 	ID3D11Device* device;
 	ID3D11DeviceContext* deviceContext;
 

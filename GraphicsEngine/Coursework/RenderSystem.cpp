@@ -1,6 +1,7 @@
 #include "RenderSystem.h"
 #include "AssetSystem.h"
 #include "SkyMapShader.h"
+#include "TransformGizmo.h"
 
 
 
@@ -565,7 +566,26 @@ void RenderSystem::renderOnFullScreenOrtho(TextureShader& textureShader, RenderT
 
 	  gizmosRenderCollection = std::make_unique<RenderItemCollection>(gizmoShader.get(),
 		  [&](DefaultShader* sh) { setupBaseShaderParamters(*sh); },
-		  [&](DefaultShader* ls, MeshInstance* instnace) { setupInstanceParameter(*ls, instnace);});
+		  [&](DefaultShader* ls, MeshInstance* instnace) 
+		  { 
+			  auto gizmo = (TransformGizmo*)(instnace);
+			  if (gizmo->state == GizmoState::HOVERED)
+			  {
+				  GizmoShader::GizmosShaderData data{ XMFLOAT4{1,0,0,1} };
+				  gizmoShader->GizmoDataBuffer.SetTo(getDeviceContext(), &data);
+			  }
+			  else {
+				  GizmoShader::GizmosShaderData data{ XMFLOAT4{0,1,0,1} };
+				  gizmoShader->GizmoDataBuffer.SetTo(getDeviceContext(), &data);
+
+			  }
+
+
+			 
+
+			  setupInstanceParameter(*ls, instnace);
+
+		  });
 		  
 		  
 		  

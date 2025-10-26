@@ -207,6 +207,9 @@
     <ClCompile Include="GizmosOverlay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TransformGizmo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scene.h">
@@ -361,6 +364,9 @@
     </ClInclude>
     <ClInclude Include="GizmosOverlay.h">
       <Filter>Header Files\Shaders\PostProcessing</Filter>
+    </ClInclude>
+    <ClInclude Include="TransformGizmo.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

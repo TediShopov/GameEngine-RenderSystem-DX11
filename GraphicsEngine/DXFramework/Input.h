@@ -26,17 +26,17 @@ public:
 	void SetKeyDown(WPARAM key);	///< Sets key down value for specified key
 	void SetKeyUp(WPARAM key);		///< Sets key up value for specified key
 
-	bool isKeyDown(int key);		///< Check if specified key is down
+	bool isKeyDown(int key)  const;		///< Check if specified key is down
 	void setMouseX(int xPosition);	///< Set mouse X-axis position
 	void setMouseY(int yPosition);	///< Set mouse y-axis position
-	int getMouseX();				///< Get mouse x-axis position
-	int getMouseY();				///< Get mouse y-axis position
+	int getMouseX() const;				///< Get mouse x-axis position
+	int getMouseY() const;				///< Get mouse y-axis position
 	void setLeftMouse(bool down);	///< Set left mouse click
 	void setRightMouse(bool down);	///< Set right mouse click
-	bool isLeftMouseDown();			///< Check left mouse click
-	bool isRightMouseDown();		///< Check right mouse click
+	bool isLeftMouseDown() const;			///< Check left mouse click
+	bool isRightMouseDown() const;		///< Check right mouse click
 	void setMouseActive(bool active);	///< Set monuse in/active
-	bool isMouseActive();			///< Check if mouse is in/active
+	bool isMouseActive()  const;			///< Check if mouse is in/active
 
 private:
 	bool keys[256];		///< Array for storing key states

@@ -44,8 +44,9 @@ public:
 	void setPosition(float lx, float ly, float lz);		///< Set camera position directly
 	void setRotation(float lx, float ly, float lz);		///< Set camera rotation directly
 
-	XMFLOAT3 getPosition();		///< Get camera's current position
-	XMFLOAT3 getRotation();		///< Get camera's current rotation
+	XMFLOAT3 getPosition() const;		///< Get camera's current position
+	XMFLOAT3 getRotation() const;		///< Get camera's current rotation
+	XMVECTOR getForwardVector() const;		///< Get camera's current rotation
 
 	void update();				///< update camera, recalculates view matrix based on rotation
 	XMMATRIX getViewMatrix() const;	///< Get current view matrix of camera

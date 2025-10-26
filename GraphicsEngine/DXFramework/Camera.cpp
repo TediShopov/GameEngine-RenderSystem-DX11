@@ -42,14 +42,42 @@ void Camera::setRotation(float lx, float ly, float lz)
 	rotation.z = lz;
 }
 
-XMFLOAT3 Camera::getPosition()
+XMFLOAT3 Camera::getPosition() const
 {
 	return position;
 }
 
-XMFLOAT3 Camera::getRotation()
+XMFLOAT3 Camera::getRotation() const
 {
 	return rotation;
+}
+
+XMVECTOR Camera::getForwardVector() const
+{
+
+	XMVECTOR up, positionv, lookAt;
+	float yaw, pitch, roll;
+	XMMATRIX rotationMatrix;
+	
+	// Setup the vectors
+	up = XMVectorSet(0.0f, 1.0, 0.0, 1.0f);
+	positionv = XMLoadFloat3(&position);
+	lookAt = XMVectorSet(0.0, 0.0, 1.0f, 1.0f);
+	
+	// Set the yaw (Y axis), pitch (X axis), and roll (Z axis) rotations in radians.
+	pitch = rotation.x * 0.0174532f;
+	yaw = rotation.y * 0.0174532f;
+	roll = rotation.z * 0.0174532f;
+
+	// Create the rotation matrix from the yaw, pitch, and roll values.
+	rotationMatrix = XMMatrixRotationRollPitchYaw(pitch, yaw, roll);
+	//rotationMatrix = XMMatrixRotationRollPitchYaw(roll,pitch,yaw);
+
+	// Transform the lookAt and up vector by the rotation matrix so the view is correctly rotated at the origin.
+	lookAt = XMVector3TransformCoord(lookAt, rotationMatrix);
+	up = XMVector3TransformCoord(up, rotationMatrix);
+	
+	return lookAt;
 }
 
 // Re-calucation view Matrix.

@@ -23,6 +23,7 @@
 #include "LightEditorUI.h"
 #include "TransformEditorUI.h"
 #include "ActiveInstanceSelectorUI.h"
+#include "TransformGizmo.h"
 
 #include "BuoyancyComputeShader.h"
 
@@ -189,9 +190,13 @@ private:
 	std::unique_ptr<MeshInstance> tessellationQuadInstance;  //The buoyant mesh in the scene
 	//std::unique_ptr<MeshInstance> shipMeshInstance;
 
-	std::unique_ptr<MeshInstance> transformGizmoUp; 
-	std::unique_ptr<MeshInstance> transformGizmoRight; 
-	std::unique_ptr<MeshInstance> transformGizmoForward; 
+//	std::unique_ptr<MeshInstance> transformGizmoUp; 
+//	std::unique_ptr<MeshInstance> transformGizmoRight; 
+//	std::unique_ptr<MeshInstance> transformGizmoForward; 
+	std::unique_ptr<TransformGizmo> transformGizmoUp; 
+	std::unique_ptr<TransformGizmo> transformGizmoRight; 
+	std::unique_ptr<TransformGizmo> transformGizmoForward; 
+	std::vector<TransformGizmo*> exclusiveGizmos;
 	
 
 	MeshInstance* shipMeshInstance;

@@ -12,7 +12,7 @@ void Input::SetKeyUp(WPARAM key)
 	keys[key] = false;
 }
 
-bool Input::isKeyDown(int key)
+bool Input::isKeyDown(int key) const
 {
 	return keys[key];
 }
@@ -27,12 +27,12 @@ void Input::setMouseY(int yPosition)
 	mouse.y = yPosition;
 }
 
-int Input::getMouseX()
+int Input::getMouseX() const
 {
 	return mouse.x;
 }
 
-int Input::getMouseY()
+int Input::getMouseY() const
 {
 	return mouse.y;
 }
@@ -47,12 +47,12 @@ void Input::setRightMouse(bool down)
 	mouse.right = down;
 }
 
-bool Input::isLeftMouseDown()
+bool Input::isLeftMouseDown() const
 {
 	return mouse.left;
 }
 
-bool Input::isRightMouseDown()
+bool Input::isRightMouseDown() const
 {
 	return mouse.right;
 }
@@ -61,7 +61,7 @@ void Input::setMouseActive(bool active)
 {
 	mouse.isActive = active;
 }
-bool Input::isMouseActive()
+bool Input::isMouseActive() const
 {
 	return mouse.isActive;
 }

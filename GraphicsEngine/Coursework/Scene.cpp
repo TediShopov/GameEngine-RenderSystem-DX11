@@ -179,24 +179,25 @@ void Scene::assignSpecialInstances()
 	auto cubeMesh = assetSystem->getMesh("Cube");
 
 	//Assigne the cube mesh to the transform gizmos
-	transformGizmoForward = std::make_unique<MeshInstance>(cubeMesh);
-	transformGizmoRight = std::make_unique<MeshInstance>(cubeMesh);
-	transformGizmoUp = std::make_unique<MeshInstance>(cubeMesh);
+	transformGizmoForward = std::make_unique<TransformGizmo>(XMFLOAT3 {0,0,1}, sWidth, sHeight, cubeMesh);
+	transformGizmoRight = std::make_unique<TransformGizmo>(XMFLOAT3{1,0,0}, sWidth, sHeight, cubeMesh);
+	transformGizmoUp = std::make_unique<TransformGizmo>(XMFLOAT3{0,1,0},sWidth, sHeight, cubeMesh);
 
 	transformGizmoForward->setMaterial(assetSystem->getMaterial("Blue"));
 	transformGizmoRight->setMaterial(assetSystem->getMaterial("Red"));
 	transformGizmoUp->setMaterial(assetSystem->getMaterial("Green"));
 
-//	transformGizmoForward->transform.setScale(10,10,10);
-//	transformGizmoRight->transform.setScale(10,10,10);
-//	transformGizmoUp->transform.setScale(10,10,10);
 	transformGizmoForward->transform.setScale(1,1,10);
 	transformGizmoRight->transform.setScale(10,1,1);
 	transformGizmoUp->transform.setScale(1,10,1);
 
-	this->renderSystem->addGizmoInstance(transformGizmoForward.get());
-	this->renderSystem->addGizmoInstance(transformGizmoUp.get());
-	this->renderSystem->addGizmoInstance(transformGizmoRight.get());
+
+	exclusiveGizmos.push_back(transformGizmoForward.get());
+	exclusiveGizmos.push_back(transformGizmoRight.get());
+	exclusiveGizmos.push_back(transformGizmoUp.get());
+
+	for (auto tg : exclusiveGizmos)
+		this->renderSystem->addGizmoInstance(tg);
 
 
 }
@@ -545,11 +546,7 @@ void Scene::meshInstanceTreeGuiWindow()
 	ImGui::Begin("Mesh Instance Tree");
 	activeInstanceSelectorUI->appendToImgui();
 	activeInstanceSelectorUI->applyChangesTo(this);
-	if (activeInstanceSelectorUI->getRawData().isNew)
-	{
-		this->transformEditor.updateStateOfUI(&this->activeMeshInstance->transform);
-	}
-
+	this->transformEditor.updateStateOfUI(&this->activeMeshInstance->transform);
 	transformEditor.appendToImgui();
 	transformEditor.applyChangesTo(&this->activeMeshInstance->transform);
 	ImGui::End();
@@ -745,13 +742,27 @@ void Scene::renderPointsAboveAndBelow(XMMATRIX view, XMMATRIX projection)
 //--- GIZMOS AND EDITOR ---
 
  void Scene::updateTransformGizmos()
+	 
 {
-	 if (this->activeMeshInstance != nullptr)
+	 XMMATRIX view = camera->getViewMatrix();
+	 XMMATRIX projection = renderer->getProjectionMatrix();
+
+
+	 std::sort(exclusiveGizmos.begin(), exclusiveGizmos.end(), [](TransformGizmo* a, TransformGizmo* b) {return a->state > b->state; });
+	 bool activeUpdated = false;
+	 for (auto& tg : exclusiveGizmos)
 	 {
-		 transformGizmoForward->transform.setPosition(activeMeshInstance->transform.getGlobalPosition());
-		 transformGizmoRight->transform.setPosition(activeMeshInstance->transform.getGlobalPosition());
-		 transformGizmoUp->transform.setPosition(activeMeshInstance->transform.getGlobalPosition());
+		 tg->updateState(*this->input, *camera, projection, activeMeshInstance);
+		 if (tg->state == GizmoState::ACTIVE && activeUpdated == false)
+		 {
+			 tg->update(*this->input, *camera, projection, activeMeshInstance);
+			 activeUpdated = true;
+		 }
+
+
 	 }
+
+
 
 }
 
@@ -793,6 +804,7 @@ void Scene::gui()
 
 	if (isDebugMode)
 	{
+		
 		//Terrain gui options
 		terrainGenerationGuiWindow();
 		testingRayGuiWindow();
